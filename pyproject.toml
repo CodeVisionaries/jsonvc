@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jsontools"
+dynamic = ["version"]
+description = 'Convenience tool for using the json ecosystem for provenance tracking'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "SPRENGER Julia, NEA/SCI/DB", email = "julia.sprenger@oecd-nea.org" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = []
+
+[project.urls]
+Documentation = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools#readme"
+Issues = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools/issues"
+Source = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools"
+
+[tool.hatch.version]
+path = "src/jsontools/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/jsontools tests}"
+
+[tool.coverage.run]
+source_pkgs = ["jsontools", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/jsontools/__about__.py",
+]
+
+[tool.coverage.paths]
+jsontools = ["src/jsontools", "*/jsontools/src/jsontools"]
+tests = ["tests", "*/jsontools/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
