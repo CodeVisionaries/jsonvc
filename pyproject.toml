@@ -11,7 +11,10 @@ requires-python = ">=3.8"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "SPRENGER Julia, NEA/SCI/DB", email = "julia.sprenger@oecd-nea.org" },
+  { name = "Julia Sprenger"},
+  { name = "Georg Schnabel"}
+  { name = "Thomas Stainer"}
+  { name = "Shin Okumura"}
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -25,11 +28,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = []
-
-[project.urls]
-Documentation = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools#readme"
-Issues = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools/issues"
-Source = "https://github.com/SPRENGER Julia, NEA/SCI/DB/jsontools"
 
 [tool.hatch.version]
 path = "src/jsontools/__about__.py"
