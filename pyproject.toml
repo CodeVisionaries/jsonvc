@@ -12,9 +12,9 @@ license = "MIT"
 keywords = []
 authors = [
   { name = "Julia Sprenger"},
-  { name = "Georg Schnabel"}
-  { name = "Thomas Stainer"}
-  { name = "Shin Okumura"}
+  { name = "Georg Schnabel"},
+  { name = "Thomas Stainer"},
+  { name = "Shin Okumura"},
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
