@@ -27,7 +27,10 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+  "jsontools",
+  "pydantic>=2.0.0",
+]
 
 [tool.hatch.version]
 path = "src/jsontools/__about__.py"
@@ -35,6 +38,7 @@ path = "src/jsontools/__about__.py"
 [tool.hatch.envs.types]
 extra-dependencies = [
   "mypy>=1.0.0",
+  "datamodel-code-generation",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:src/jsontools tests}"

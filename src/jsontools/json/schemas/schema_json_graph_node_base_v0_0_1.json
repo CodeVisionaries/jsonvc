@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "0.0.1",
+  "title": "JsonGraphNodeBase",
+  "description": "Stores reference to JSON object and to JSON patch that generated it",
+  "type": "object",
+  "properties": {
+    "extJsonPatchHash": {
+      "description": "sha256 hexdigest of extJsonPatch document",
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "documentHash": {
+      "description": "sha256 hexdigest of associated JSON document",
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceHashes": {
+      "description": "List with source node hashes",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "description": "sha256 hash of source node",
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64,
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "description": "Additional optional meta information",
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "extJsonPatchHash",
+    "documentHash",
+    "sourceBlocks"
+  ]
+}

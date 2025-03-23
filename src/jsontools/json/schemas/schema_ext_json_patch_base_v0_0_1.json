@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "0.0.1",
+  "title": "ExtJsonPatchBase",
+  "description": "Stores an extended JSON Patch document",
+  "type": "object",
+  "properties": {
+    "sourceHashes": {
+      "description": "Mapping of aliases to source documents identiied by sha256 hexdigets",
+      "type": "object",
+      "patternProperties": {
+        "^[0-9a-zA-Z_-]+$": {
+          "description": "sha256 hexdigest of source document",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "description": "Valid name for JSON attribute",
+      "type": "string",
+      "pattern": "^[0-9a-zA-Z_-]+$"
+    },
+    "operations": {
+      "description": "array of JSON patch operations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "sourceHashes",
+    "target",
+    "operations"
+  ]
+}
