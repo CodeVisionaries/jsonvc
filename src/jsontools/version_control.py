@@ -1,6 +1,10 @@
 from typing import Callable, List, Dict, Optional
 import json
-from .jsonpatch_ext import create_ext_patch
+from .jsonpatch_ext import (
+    create_patch,
+    apply_patch,
+    create_ext_patch,
+)
 from .checksum import compute_json_hash
 from pathlib import Path
 from .json.models import JsonGraphNode, ExtJsonPatch
@@ -220,11 +224,27 @@ class JsonDocVersionControl:
         doc_hash = node.get_document_hash()
         return self._storage.load(doc_hash)
 
-    def get_diff(self, short_node_hash):
-        node_hash = self._get_full_node_hash(short_node_hash)
-        node = self._cache.get_node(node_hash)
-        patch_hash = node.get_ext_patch_hash()
-        return self._storage.load(patch_hash)
+    def get_diff(self, old_short_node_hash, new_short_node_hash):
+        old_node_hash = self._get_full_node_hash(old_short_node_hash)
+        new_node_hash = self._get_full_node_hash(new_short_node_hash)
+        old_node = self._cache.get_node(old_node_hash)
+        new_node = self._cache.get_node(new_node_hash)
+        old_doc_hash = old_node.get_document_hash()
+        new_doc_hash = new_node.get_document_hash()
+        old_json_dict = self._storage.load(old_doc_hash)
+        new_json_dict = self._storage.load(new_doc_hash)
+        patch = create_patch(old_json_dict, new_json_dict)
+        # for the time being, apply the created patch and
+        # see if the new document is recovered. This careful
+        # measure is due to issues, such as #138, #152, #160
+        # reported at https://github.com/stefankoegl/python-json-patch/issues
+        test_doc = apply_patch(old_json_dict, patch)
+        if compute_json_hash(new_json_dict) != compute_json_hash(test_doc):
+            raise ValueError(
+                'An invalid patch has been created for the comparison. This '
+                'error is likely the result of a bug in the jsonpatch package.'
+            )
+        return patch
 
 
 class JsonFileVersionControl:
@@ -257,6 +277,6 @@ class JsonFileVersionControl:
         json_dict = self._docvc.get_doc(short_node_hash)
         return json.dumps(json_dict, indent=2)
 
-    def get_diff(self, short_node_hash: str) -> str:
-        json_dict = self._docvc.get_diff(short_node_hash)
+    def get_diff(self, old_short_node_hash: str, new_short_node_hash: str) -> str:
+        json_dict = self._docvc.get_diff(old_short_node_hash, new_short_node_hash)
         return json.dumps(json_dict, indent=2)

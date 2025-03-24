@@ -48,8 +48,8 @@ def action_showdoc(short_hash, filevc):
     sys.exit(0)
 
 
-def action_showdiff(short_hash, filevc):
-    print(filevc.get_diff(short_hash))
+def action_showdiff(old_short_hash, new_short_hash, filevc):
+    print(filevc.get_diff(old_short_hash, new_short_hash))
     sys.exit(0)
 
 
@@ -77,7 +77,8 @@ def _prepare_parser():
     showdoc_parser.add_argument('short_hash', type=str, help='Short-form hash of file')
 
     showdiff_parser = subparsers.add_parser('showdiff', help='Print diff to previous json object on stdout')
-    showdiff_parser.add_argument('short_hash', type=str, help='Short-form hash of file')
+    showdiff_parser.add_argument('old_short_hash', type=str, help='Short-form hash of old file')
+    showdiff_parser.add_argument('new_short_hash', type=str, help='Short-form hash of new file')
     return parser
 
 
@@ -93,7 +94,7 @@ def _perform_action(args, filevc):
     elif args.command == 'showdoc':
         action_showdoc(args.short_hash, filevc)
     elif args.command == 'showdiff':
-        action_showdiff(args.short_hash, filevc)
+        action_showdiff(args.old_short_hash, args.new_short_hash, filevc)
     else:
         print('Unknown command. Useh --help for usage.')
 
