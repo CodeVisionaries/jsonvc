@@ -273,9 +273,9 @@ class JsonFileVersionControl:
         json_dict = load_json_file(json_file)
         return self._docvc.get_log(json_dict)
 
-    def get_doc(self, short_node_hash: str) -> str: 
+    def get_doc(self, short_node_hash: str, json_dumps_args: Optional[dict]=None) -> str:
         json_dict = self._docvc.get_doc(short_node_hash)
-        return json.dumps(json_dict, indent=2)
+        return json.dumps(json_dict, **json_dumps_args)
 
     def get_diff(self, old_short_node_hash: str, new_short_node_hash: str) -> str:
         json_dict = self._docvc.get_diff(old_short_node_hash, new_short_node_hash)

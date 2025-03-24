@@ -43,8 +43,8 @@ def action_showlog(filename, filevc):
     sys.exit(0)
 
 
-def action_showdoc(short_hash, filevc):
-    print(filevc.get_doc(short_hash))
+def action_showdoc(short_hash, json_dumps_args, filevc):
+    print(filevc.get_doc(short_hash, json_dumps_args))
     sys.exit(0)
 
 
@@ -75,6 +75,7 @@ def _prepare_parser():
 
     showdoc_parser = subparsers.add_parser('showdoc', help='Print json object on stdout')
     showdoc_parser.add_argument('short_hash', type=str, help='Short-form hash of file')
+    showdoc_parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
 
     showdiff_parser = subparsers.add_parser('showdiff', help='Print diff to previous json object on stdout')
     showdiff_parser.add_argument('old_short_hash', type=str, help='Short-form hash of old file')
@@ -92,9 +93,13 @@ def _perform_action(args, filevc):
     elif args.command == 'showlog':
         action_showlog(args.filename, filevc)
     elif args.command == 'showdoc':
-        action_showdoc(args.short_hash, filevc)
+        json_dumps_args = {'indent': args.indent}
+        action_showdoc(args.short_hash, json_dumps_args, filevc)
     elif args.command == 'showdiff':
-        action_showdiff(args.old_short_hash, args.new_short_hash, filevc)
+        json_dumps_args = {'indent': args.indent}
+        action_showdiff(
+            args.old_short_hash, args.new_short_hash, json_dumps_args, filevc
+        )
     else:
         print('Unknown command. Useh --help for usage.')
 
