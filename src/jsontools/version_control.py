@@ -32,7 +32,8 @@ class JsonTrackGraph:
         return node_hash
 
     def create_node(
-        self, ext_json_patch: dict, source_hashes: List[str], meta: Optional[dict]=None
+        self, ext_json_patch: dict, source_hashes: List[str],
+        meta: Optional[dict]=None, expected_doc_hash: Optional[str]=None
     ) -> str:
         # do rigorous consistency checking
         patch = ExtJsonPatch(**ext_json_patch)
@@ -51,6 +52,13 @@ class JsonTrackGraph:
         new_doc = patch.apply(self._storage.load)
         patch_hash = self._storage.store(patch.model_dump())
         new_doc_hash = self._storage.store(new_doc)
+        if new_doc_hash != expected_doc_hash:
+            raise ValueError(
+                'The hash of the new document is not equal to the '
+                'expected hash. This error may indicate that the jsonpatch '
+                'package has created an inapropriate patch to transform a '
+                'given source document into a given destination document.'
+            )
         new_node = JsonGraphNode(
             extJsonPatchHash = patch_hash,
             documentHash = new_doc_hash,
@@ -172,7 +180,10 @@ class JsonDocVersionControl:
         if len(source_node_hashes) > 1:
             raise ValueError('more than one node are associated with this JSON document')
         meta = {'comment': str(comment)} if comment is not None else None 
-        new_node = self._graph.create_node(ext_patch, source_node_hashes, meta) 
+        new_doc_hash = compute_json_hash(new_json_dict)
+        new_node = self._graph.create_node(
+            ext_patch, source_node_hashes, meta, new_doc_hash
+        )
         self._cache.update(new_node)
         return new_node
 
