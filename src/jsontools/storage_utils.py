@@ -4,13 +4,13 @@ from pathlib import Path
 from .checksum import (
     is_hexadecimal,
     compute_json_hash,
+    is_hash_wellformed,
 )
 
 
-def load_json_file(filepath: Path) -> dict:
-    with open(Path(filepath), 'r') as f:
-        json_dict = json.load(f)
-    return json_dict
+def check_json_hash_wellformed(json_hash: str) -> bool:
+    if not is_hash_wellformed(json_hash):
+        raise ValueError('hash string is not well-formed')
 
 
 def is_filename_wellformed(filename: Path) -> bool:
@@ -30,11 +30,10 @@ def construct_filepath(json_hash: str, storage_dir: Path) -> str:
     return Path(storage_dir) / (json_hash + '.json')
 
 
-def check_json_hash_wellformed(json_hash):
-    if not is_hexadecimal(json_hash):
-        raise ValueError(
-            '`json_hash` must be a hexadecimal number string'
-        )
+def load_json_file(filepath: Path) -> dict:
+    with open(Path(filepath), 'r') as f:
+        json_dict = json.load(f)
+    return json_dict
 
 
 def is_json_object_stored(json_hash: str, storage_dir: Path):
