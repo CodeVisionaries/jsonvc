@@ -275,8 +275,8 @@ class JsonFileVersionControl:
                 return list(node_hashes)[0]
             except json.decoder.JSONDecodeError:
                 raise ValueError(
-                f'The file `{f}` is not in JSON format.'
-            )
+                    f'The file `{f}` is not in JSON format.'
+                )
             except FileNotFoundError as exc:
                 if source == 'file':
                     raise
