@@ -12,6 +12,14 @@ def is_hexadecimal(numstr: str) -> bool:
         return False
 
 
+def is_hash_wellformed(numstr: str) -> bool:
+    return is_hexadecimal(numstr) and len(numstr) == 64
+
+
+def is_hash_prefix_wellformed(numstr: str) -> bool:
+    return is_hexadecimal(numstr)
+
+
 def get_unique_json_repr(json_dict: dict) -> str:
     """Return a compact and unique JSON string representation"""
     return json.dumps(
