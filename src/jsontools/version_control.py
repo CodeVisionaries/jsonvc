@@ -19,6 +19,10 @@ from .storage import (
 from .custom_exceptions import (
     HashPrefixAmbiguousError,
     HashNotFoundError,
+    DocAlreadyTrackedError,
+    SeveralAncestorsError,
+    SeveralNodesWithDocError,
+    DocNotTrackedError,
 )
 
 
@@ -139,7 +143,7 @@ class JsonNodeCache:
             nodes_to_visit = source_node_hashes.difference(self._known_nodes)
             self.discover_nodes(nodes_to_visit)
 
-    def find_associated_nodes(self, doc_hash: str) -> List[str]:
+    def find_associated_node_hashes(self, doc_hash: str) -> List[str]:
         return self._known_docs.get(doc_hash, set()).copy()
 
     def get_doc_hashes(self) -> list[str]:
@@ -163,50 +167,53 @@ class JsonDocVersionControl:
         self._cache = JsonNodeCache(storage_provider)
         self._storage = storage_provider
 
+    # methods taking json dicts as input
+
     def get_associated_node_hashes(self, json_dict: dict) -> list[str]:
         json_hash = compute_json_hash(json_dict)
-        return self._cache.find_associated_nodes(json_hash)
+        return self._cache.find_associated_node_hashes(json_hash)
 
     def is_tracked(self, json_dict: dict) -> bool:
         node_hashes = self.get_associated_node_hashes(json_dict)
         return len(node_hashes) > 0
 
-    def track(self, json_dict: dict, message: str) -> str:
-        if self.is_tracked(json_dict):
-            raise ValueError('already tracked')
+    def track(self, json_dict: dict, message: str, force: bool=False) -> str:
+        if self.is_tracked(json_dict) and not force:
+            raise DocAlreadyTrackedError('The JSON document is already being tracked')
         meta = {'message': message}
         node_hash = self._graph.create_genesis_node(json_dict, meta)
         self._cache.update(node_hash)
         return node_hash
 
-    def update(self, old_json_dict: dict, new_json_dict: dict, message: str) -> str:
-        if not self.is_tracked(old_json_dict):
-            raise HashNotFoundError('The JSON object to be updated is not tracked')
-        if self.is_tracked(new_json_dict):
-            raise ValueError('The new JSON file is already in the system')
+    # methods taking node hashes as inputs
+
+    def get_messages(self, node_hashes: list[str]) -> dict[str, str]:
+        nodes = [self._cache.get_node(h) for h in node_hashes]
+        messages = {h: n.get_meta()['message'] for h, n in zip(node_hashes, nodes)}
+        return messages
+
+    def update(self, old_node_hash: dict, new_json_dict: dict,
+               message: str, force: bool=False) -> str:
+        if self.is_tracked(new_json_dict) and not force:
+            raise DocAlreadyTrackedError('The new JSON document is already in the system')
+        old_json_dict = self.get_doc(old_node_hash)
         ext_patch = create_ext_patch(old_json_dict, new_json_dict)
-        doc_hash = compute_json_hash(old_json_dict)
-        source_node_hashes = self._cache.find_associated_nodes(doc_hash)
-        if len(source_node_hashes) > 1:
-            raise ValueError('more than one node are associated with this JSON document')
         meta = {'message': message}
         new_doc_hash = compute_json_hash(new_json_dict)
+        source_node_hashes = [old_node_hash]
         new_node = self._graph.create_node(
             ext_patch, source_node_hashes, meta, new_doc_hash
         )
         self._cache.update(new_node)
         return new_node
 
-    def get_log(self, json_dict: dict) -> list[str]:
-        if not self.is_tracked(json_dict):
-            raise IndexError('This JSON object is not tracked, no log available')
-        doc_hash = compute_json_hash(json_dict)
-        node_hashes = self._cache.find_associated_nodes(doc_hash)
+    def get_log(self, node_hash: str) -> list[str]:
+        node_hashes = [node_hash]
         messages = []
         while len(node_hashes) > 0:
             # TODO: extend log show capability to deal with merge commits
             if len(node_hashes) > 1:
-                raise IndexError('Ambiguous log: More than one node associated with this document')
+                raise SeveralAncestorsError('Several ancestors detected', node_hashes)
             cur_node_hash = list(node_hashes)[0]
             cur_node = self._cache.get_node(cur_node_hash)
             meta = cur_node.get_meta()
@@ -215,7 +222,14 @@ class JsonDocVersionControl:
             node_hashes = self._cache.get_node_ancestor_hashes(cur_node_hash)
         return messages[::-1]
 
-    def _expand_hash_prefix(self, hash_prefix: str) -> dict:
+    def get_doc(self, node_hash: str) -> dict:
+        node = self._cache.get_node(node_hash)
+        doc_hash = node.get_document_hash()
+        return self._storage.load(doc_hash)
+
+    # auxiliary (but essential) functions for class users
+
+    def expand_hash_prefix(self, hash_prefix: str) -> dict:
         node_hashes = self._cache.get_node_hashes()
         matches = [n for n in node_hashes if n.startswith(hash_prefix)]
         if len(matches) == 0:
@@ -225,12 +239,6 @@ class JsonDocVersionControl:
                 'Shortform hash ambiguous---provide more leading characters'
             )
         return matches[0]
-
-    def get_doc(self, hash_prefix: str) -> dict:
-        node_hash = self._expand_hash_prefix(hash_prefix)
-        node = self._cache.get_node(node_hash)
-        doc_hash = node.get_document_hash()
-        return self._storage.load(doc_hash)
 
     def get_diff(self, old_json_dict, new_json_dict):
         patch = create_patch(old_json_dict, new_json_dict)
@@ -252,26 +260,42 @@ class JsonFileVersionControl:
     def __init__(self, storage_provider: JsonStorageProvider) -> None:
         self._docvc = JsonDocVersionControl(storage_provider)
 
-    def _get_doc_from_objref(self, json_objref: str) -> None:
+    def _get_hash_from_objref(self, json_objref: str) -> None:
         try:
-            return load_json_file(json_objref)
-        except FileNotFoundError:
-            pass
+            json_dict = load_json_file(json_objref)
+            node_hashes = self._docvc.get_associated_node_hashes(json_dict)
+            if len(node_hashes) == 0:
+                raise DocNotTrackedError('JSON document not tracked in the system')
+            if len(node_hashes) > 1:
+                raise SeveralNodesWithDocError(
+                    'Encountered several Nodes associated with the same JSON document',
+                    node_hashes
+                )
+            return list(node_hashes)[0]
         except json.decoder.JSONDecodeError:
             raise ValueError(
             f'The file `{f}` is not in JSON format.'
         )
-        try:
-            return self._docvc.get_doc(json_objref)
-        except HashNotFoundError:
-            raise ValueError(
-                'The object reference must either be a '
-                'valid JSON file or hash of a tracked JSON object.'
-            )
+        except FileNotFoundError:
+            pass
+        return self._docvc.expand_hash_prefix(json_objref)
 
-    def get_associated_node_hashes(self, json_objref: str) -> list[str]:
-        json_dict = self._get_doc_from_objref(json_objref)
+    def _get_doc_from_objref(self, json_objref: str, cache_only: bool=False) -> dict:
+        if not cache_only:
+            try:
+                return load_json_file(json_objref)
+            except FileNotFoundError:
+                pass
+        node_hash = self._docvc.expand_hash_prefix(json_objref)
+        return self._docvc.get_doc(node_hash)
+
+    def get_associated_node_hashes(self, json_file: Path) -> list[str]:
+        json_dict = load_json_file(json_file)
         return self._docvc.get_associated_node_hashes(json_dict)
+
+    def get_messages(self, json_file: Path) -> dict[str, str]:
+        node_hashes = self.get_associated_node_hashes(json_file)
+        return self._docvc.get_messages(node_hashes)
 
     def is_tracked(self, json_file: Path) -> bool:
         json_dict = load_json_file(Path(json_file))
@@ -282,17 +306,17 @@ class JsonFileVersionControl:
         return self._docvc.track(json_dict, message)
 
     def update(self, old_json_objref: str, new_json_objref: Path,
-               message: str) -> str:
-        old_json_dict = self._get_doc_from_objref(old_json_objref)
-        new_json_dict = self._get_doc_from_objref(new_json_objref)
-        return self._docvc.update(old_json_dict, new_json_dict, message)
+               message: str, force: bool=False) -> str:
+        old_node_hash = self._get_hash_from_objref(old_json_objref)
+        new_json_dict = self._get_doc_from_objref(new_json_objref, cache_only=False)
+        return self._docvc.update(old_node_hash, new_json_dict, message, force)
 
     def get_log(self, json_objref: str) -> list[str]:
-        json_dict = self._get_doc_from_objref(json_objref)
-        return self._docvc.get_log(json_dict)
+        node_hash = self._get_hash_from_objref(json_objref)
+        return self._docvc.get_log(node_hash)
 
     def get_doc(self, json_objref: str, json_dumps_args: Optional[dict]=None) -> str:
-        json_dict = self._get_doc_from_objref(json_objref)
+        json_dict = self._get_doc_from_objref(json_objref, cache_only=True)
         return json.dumps(json_dict, **json_dumps_args)
 
     def get_diff(self, old_json_objref: str, new_json_objref: str,

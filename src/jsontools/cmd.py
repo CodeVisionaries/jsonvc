@@ -4,7 +4,10 @@ from pathlib import Path
 import argparse
 from .storage import LocalJsonStorageProvider
 from .version_control import JsonFileVersionControl
-
+from .custom_exceptions import (
+    DocAlreadyTrackedError,
+    SeveralNodesWithDocError,
+)
 
 
 def action_track(filename, message, filevc):
@@ -15,29 +18,59 @@ def action_track(filename, message, filevc):
     sys.exit(0)
 
 
-def action_istracked(filename, filevc): 
+def action_istracked(filename, filevc):
     filename = Path(filename)
     if filevc.is_tracked(filename):
         node_hashes = filevc.get_associated_node_hashes(filename)
-        node_hashes_str = '\n, '.join(node_hashes)
+        node_hashes_str = '\n'.join(node_hashes)
         plsfx = 'es' if len(node_hashes) > 1 else ''
         print(
             f'The file {filename.name} is tracked and associated '
-            f'with node hash{plsfx}: {node_hashes_str}\n'
+            f'with node hash{plsfx}:\n{node_hashes_str}\n'
         )
     else:
         print(f'The file {filename.name} is not tracked')
         sys.exit(1)
 
 
-def action_update(old_objref, new_objref, message, filevc):
-    filevc.update(old_objref, new_objref, message)
+def action_update(old_objref, new_objref, message, force, filevc):
+    try:
+        filevc.update(old_objref, new_objref, message, force)
+    except DocAlreadyTrackedError:
+        print(
+            'The new document is already in the system.\n'
+            'Use the `showassoc` subcommand to list associated nodes.\n'
+            'If you want to force the creation of a new node, use the --force flag'
+        )
+        sys.exit(1)
     print(f'Successfully registered update to json object {old_objref}')
     sys.exit(0)
 
 
+def action_showassoc(objref, filevc):
+    assoc_node_hashes = filevc.get_associated_node_hashes(objref)
+    if len(assoc_node_hashes) == 0:
+        print('This referenced JSON document is not tracked.')
+        sys.exit(1)
+    print('The referencd JSON document is associated with the following nodes:')
+    messages = filevc.get_messages(objref)
+    for h, m in messages.items():
+        sh = h[:10]
+        print(f'{sh}: {m}')
+
+
 def action_showlog(objref, filevc):
-    messages = filevc.get_log(objref)
+    try:
+        messages = filevc.get_log(objref)
+    except SeveralNodesWithDocError as exc:
+        print('This JSON document is associated with several nodes:\n')
+        print('\n'.join(exc.node_hashes) + '\n')
+        print(
+            'You can use `showassoc` to see the available nodes and '
+            'use one of the hashes (or a hash prefix) to dispaly the '
+            'particular history'
+        )
+        sys.exit(1)
     print('\n'.join(messages))
     sys.exit(0)
 
@@ -67,7 +100,7 @@ def _prepare_parser():
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     track_parser = subparsers.add_parser('track', help='Track a json file')
-    track_parser.add_argument('filename', type=str, help='The json file to track') 
+    track_parser.add_argument('filename', type=str, help='The json file to track')
     _add_message_arg(track_parser)
 
     istracked_parser = subparsers.add_parser('istracked', help='Show if a json file is tracked')
@@ -76,7 +109,11 @@ def _prepare_parser():
     update_parser = subparsers.add_parser('update', help='Update a json file')
     update_parser.add_argument('old_objref', type=str, help='The current tracked JSON document')
     update_parser.add_argument('new_objref', type=str, help='The new JSON document to replace it with')
+    update_parser.add_argument('--force', action='store_true', help='Force creation of node')
     _add_message_arg(update_parser)
+
+    showassoc_parser = subparsers.add_parser('showassoc', help='Show nodes associated with JSON document')
+    showassoc_parser.add_argument('objref', type=str, help='JSON document reference')
 
     showlog_parser = subparsers.add_parser('showlog', help='Show history of a file')
     showlog_parser.add_argument('objref', type=str, help='JSON document whose history is desired')
@@ -98,7 +135,9 @@ def _perform_action(args, filevc):
     elif args.command == 'istracked':
         action_istracked(args.filename, filevc)
     elif args.command == 'update':
-        action_update(args.old_objref, args.new_objref, args.message, filevc)
+        action_update(args.old_objref, args.new_objref, args.message, args.force, filevc)
+    elif args.command == 'showassoc':
+        action_showassoc(args.objref, filevc)
     elif args.command == 'showlog':
         action_showlog(args.objref, filevc)
     elif args.command == 'showdoc':
@@ -129,7 +168,7 @@ def _setup_storage_provider():
 
 
 if __name__ == '__main__':
-    store = _setup_storage_provider() 
+    store = _setup_storage_provider()
     filevc = JsonFileVersionControl(store)
 
     parser = _prepare_parser()
