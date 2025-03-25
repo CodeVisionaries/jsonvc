@@ -171,15 +171,15 @@ class JsonDocVersionControl:
         node_hashes = self.get_associated_node_hashes(json_dict)
         return len(node_hashes) > 0
 
-    def track(self, json_dict: dict, comment: Optional[str]=None) -> str:
+    def track(self, json_dict: dict, message: str) -> str:
         if self.is_tracked(json_dict):
             raise ValueError('already tracked')
-        meta = {'comment': str(comment)} if comment is not None else None
+        meta = {'message': message}
         node_hash = self._graph.create_genesis_node(json_dict, meta)
         self._cache.update(node_hash)
         return node_hash
 
-    def update(self, old_json_dict: dict, new_json_dict: dict, comment: Optional[str]=None) -> str:
+    def update(self, old_json_dict: dict, new_json_dict: dict, message: str) -> str:
         if not self.is_tracked(old_json_dict):
             raise HashNotFoundError('The JSON object to be updated is not tracked')
         if self.is_tracked(new_json_dict):
@@ -189,7 +189,7 @@ class JsonDocVersionControl:
         source_node_hashes = self._cache.find_associated_nodes(doc_hash)
         if len(source_node_hashes) > 1:
             raise ValueError('more than one node are associated with this JSON document')
-        meta = {'comment': str(comment)} if comment is not None else None
+        meta = {'message': message}
         new_doc_hash = compute_json_hash(new_json_dict)
         new_node = self._graph.create_node(
             ext_patch, source_node_hashes, meta, new_doc_hash
@@ -202,7 +202,7 @@ class JsonDocVersionControl:
             raise IndexError('This JSON object is not tracked, no log available')
         doc_hash = compute_json_hash(json_dict)
         node_hashes = self._cache.find_associated_nodes(doc_hash)
-        comments = []
+        messages = []
         while len(node_hashes) > 0:
             # TODO: extend log show capability to deal with merge commits
             if len(node_hashes) > 1:
@@ -210,10 +210,10 @@ class JsonDocVersionControl:
             cur_node_hash = list(node_hashes)[0]
             cur_node = self._cache.get_node(cur_node_hash)
             meta = cur_node.get_meta()
-            comment = meta.get('comment', '')
-            comments.append(f"{cur_node_hash[:7]}: {comment}")
+            message = meta.get('message', '')
+            messages.append(f"{cur_node_hash[:7]}: {message}")
             node_hashes = self._cache.get_node_ancestor_hashes(cur_node_hash)
-        return comments[::-1]
+        return messages[::-1]
 
     def _expand_hash_prefix(self, hash_prefix: str) -> dict:
         node_hashes = self._cache.get_node_hashes()
@@ -277,15 +277,15 @@ class JsonFileVersionControl:
         json_dict = load_json_file(Path(json_file))
         return self._docvc.is_tracked(json_dict)
 
-    def track(self, json_file: Path, comment: Optional[str]=None) -> str:
+    def track(self, json_file: Path, message: str) -> str:
         json_dict = load_json_file(Path(json_file))
-        return self._docvc.track(json_dict, comment)
+        return self._docvc.track(json_dict, message)
 
     def update(self, old_json_objref: str, new_json_objref: Path,
-               comment: Optional[str]=None) -> str:
+               message: str) -> str:
         old_json_dict = self._get_doc_from_objref(old_json_objref)
         new_json_dict = self._get_doc_from_objref(new_json_objref)
-        return self._docvc.update(old_json_dict, new_json_dict, comment)
+        return self._docvc.update(old_json_dict, new_json_dict, message)
 
     def get_log(self, json_objref: str) -> list[str]:
         json_dict = self._get_doc_from_objref(json_objref)

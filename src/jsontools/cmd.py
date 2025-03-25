@@ -56,6 +56,10 @@ def _add_json_dumps_args(parser):
     parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
 
 
+def _add_message_arg(parser):
+    parser.add_argument('-m', '--message', type=str, required=True, help='The commit message')
+
+
 def _prepare_parser():
     parser = argparse.ArgumentParser(description="Command line tool for tracking JSON files")
     parser.add_argument('-d', '--debug', action='store_true', help='Enable developer debug output')
@@ -64,7 +68,7 @@ def _prepare_parser():
 
     track_parser = subparsers.add_parser('track', help='Track a json file')
     track_parser.add_argument('filename', type=str, help='The json file to track') 
-    track_parser.add_argument('-m', '--message', type=str, nargs='?', help='Optional message') 
+    _add_message_arg(track_parser)
 
     istracked_parser = subparsers.add_parser('istracked', help='Show if a json file is tracked')
     istracked_parser.add_argument('filename', type=str, help='The file whose track status is desired')
@@ -72,7 +76,7 @@ def _prepare_parser():
     update_parser = subparsers.add_parser('update', help='Update a json file')
     update_parser.add_argument('old_objref', type=str, help='The current tracked JSON document')
     update_parser.add_argument('new_objref', type=str, help='The new JSON document to replace it with')
-    update_parser.add_argument('-m', '--message', type=str, nargs='?', help='Optional message') 
+    _add_message_arg(update_parser)
 
     showlog_parser = subparsers.add_parser('showlog', help='Show history of a file')
     showlog_parser.add_argument('objref', type=str, help='JSON document whose history is desired')
