@@ -26,19 +26,18 @@ def action_istracked(filename, filevc):
             f'with node hash{plsfx}: {node_hashes_str}\n'
         )
     else:
-        print('The file {filename.name} is not tracked')
+        print(f'The file {filename.name} is not tracked')
         sys.exit(1)
 
 
-def action_update(old_filename, new_filename, message, filevc):
-    old_filename = old_filename
-    filevc.update(old_filename, new_filename, message)
-    print(f'Successfully registered update to json file {old_filename}')
+def action_update(old_objref, new_objref, message, filevc):
+    filevc.update(old_objref, new_objref, message)
+    print(f'Successfully registered update to json object {old_objref}')
     sys.exit(0)
 
 
-def action_showlog(filename, filevc):
-    messages = filevc.get_log(filename)
+def action_showlog(objref, filevc):
+    messages = filevc.get_log(objref)
     print('\n'.join(messages))
     sys.exit(0)
 
@@ -71,20 +70,20 @@ def _prepare_parser():
     istracked_parser.add_argument('filename', type=str, help='The file whose track status is desired')
 
     update_parser = subparsers.add_parser('update', help='Update a json file')
-    update_parser.add_argument('old_filename', type=str, help='The current tracked file')
-    update_parser.add_argument('new_filename', type=str, help='The new file to replace it with')
+    update_parser.add_argument('old_objref', type=str, help='The current tracked JSON document')
+    update_parser.add_argument('new_objref', type=str, help='The new JSON document to replace it with')
     update_parser.add_argument('-m', '--message', type=str, nargs='?', help='Optional message') 
 
     showlog_parser = subparsers.add_parser('showlog', help='Show history of a file')
-    showlog_parser.add_argument('filename', type=str, help='Filename whose history is desired')
+    showlog_parser.add_argument('objref', type=str, help='JSON document whose history is desired')
 
     showdoc_parser = subparsers.add_parser('showdoc', help='Print json object on stdout')
-    showdoc_parser.add_argument('short_hash', type=str, help='Short-form hash of file')
+    showdoc_parser.add_argument('objref', type=str, help='JSON document reference')
     _add_json_dumps_args(showdoc_parser)
 
     showdiff_parser = subparsers.add_parser('showdiff', help='Print diff to previous json object on stdout')
-    showdiff_parser.add_argument('old_short_hash', type=str, help='Short-form hash of old file')
-    showdiff_parser.add_argument('new_short_hash', type=str, help='Short-form hash of new file')
+    showdiff_parser.add_argument('old_objref', type=str, help='Short-form hash of old file')
+    showdiff_parser.add_argument('new_objref', type=str, help='Short-form hash of new file')
     _add_json_dumps_args(showdiff_parser)
     return parser
 
@@ -95,16 +94,16 @@ def _perform_action(args, filevc):
     elif args.command == 'istracked':
         action_istracked(args.filename, filevc)
     elif args.command == 'update':
-        action_update(args.old_filename, args.new_filename, args.message, filevc)
+        action_update(args.old_objref, args.new_objref, args.message, filevc)
     elif args.command == 'showlog':
-        action_showlog(args.filename, filevc)
+        action_showlog(args.objref, filevc)
     elif args.command == 'showdoc':
         json_dumps_args = {'indent': args.indent}
-        action_showdoc(args.short_hash, json_dumps_args, filevc)
+        action_showdoc(args.objref, json_dumps_args, filevc)
     elif args.command == 'showdiff':
         json_dumps_args = {'indent': args.indent}
         action_showdiff(
-            args.old_short_hash, args.new_short_hash, json_dumps_args, filevc
+            args.old_objref, args.new_objref, json_dumps_args, filevc
         )
     else:
         print('Unknown command. Useh --help for usage.')
