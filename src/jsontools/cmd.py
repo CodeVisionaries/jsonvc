@@ -43,7 +43,32 @@ def action_update(old_objref, new_objref, message, force, filevc):
             'If you want to force the creation of a new node, use the --force flag'
         )
         sys.exit(1)
+    except SeveralNodesWithDocError as exc:
+        print('The reference to the object to be updated is ambiguous:\n')
+        print('\n'.join(nh for nh in exc.node_hashes) + '\n')
+        print('Please use a hash prefix instead of a filename to remove this ambiguity')
+        sys.exit(1)
+
     print(f'Successfully registered update to json object {old_objref}')
+    sys.exit(0)
+
+
+def action_replace(target_file, update_file, message, force, targethash, filevc):
+    try:
+        filevc.replace(target_file, update_file, message, force, targethash)
+    except DocAlreadyTrackedError:
+        print(
+            f'The JSON document in {update_file.name} is already in the system.\n'
+            'Use the `showassoc` subcommand to list associated nodes.\n'
+            'If you want to force the replacement and creation of a new node, use the --force flag'
+        )
+        sys.exit(1)
+    except SeveralNodesWithDocError as exc:
+        print(f'Several nodes exist with the JSON document in {target_file.name}:\n')
+        print('\n'.join(nh for nh in exc.node_hashes) + '\n')
+        print('Please specify the --targethash argument to eliminate this ambiguity')
+        sys.exit(1)
+    print(f'Successfully replaced json file {target_file.name} by {update_file.name} ')
     sys.exit(0)
 
 
@@ -112,6 +137,13 @@ def _prepare_parser():
     update_parser.add_argument('--force', action='store_true', help='Force creation of node')
     _add_message_arg(update_parser)
 
+    replace_parser = subparsers.add_parser('replace', help='Update target file and remove source file')
+    replace_parser.add_argument('target_file', type=Path, help='The file to be updated')
+    replace_parser.add_argument('update_file', type=Path, help='The file with the updatd JSON (will be deleted)')
+    replace_parser.add_argument('--force', action='store_true', help='Force replacement even if JSON document in update_file already tracked')
+    replace_parser.add_argument('--targethash', type=str, nargs='?',  help='Target node hash to eliminate ambiguity')
+    _add_message_arg(replace_parser)
+
     showassoc_parser = subparsers.add_parser('showassoc', help='Show nodes associated with JSON document')
     showassoc_parser.add_argument('objref', type=str, help='JSON document reference')
 
@@ -136,6 +168,8 @@ def _perform_action(args, filevc):
         action_istracked(args.filename, filevc)
     elif args.command == 'update':
         action_update(args.old_objref, args.new_objref, args.message, args.force, filevc)
+    elif args.command == 'replace':
+        action_replace(args.target_file, args.update_file, args.message, args.force, args.targethash, filevc)
     elif args.command == 'showassoc':
         action_showassoc(args.objref, filevc)
     elif args.command == 'showlog':
@@ -178,5 +212,6 @@ if __name__ == '__main__':
             _perform_action(args, filevc)
         except Exception as e:
             print(str(e))
+            sys.exit(1)
     else:
         _perform_action(args, filevc)

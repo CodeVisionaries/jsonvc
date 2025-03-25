@@ -260,34 +260,41 @@ class JsonFileVersionControl:
     def __init__(self, storage_provider: JsonStorageProvider) -> None:
         self._docvc = JsonDocVersionControl(storage_provider)
 
-    def _get_hash_from_objref(self, json_objref: str) -> None:
-        try:
-            json_dict = load_json_file(json_objref)
-            node_hashes = self._docvc.get_associated_node_hashes(json_dict)
-            if len(node_hashes) == 0:
-                raise DocNotTrackedError('JSON document not tracked in the system')
-            if len(node_hashes) > 1:
-                raise SeveralNodesWithDocError(
-                    'Encountered several Nodes associated with the same JSON document',
-                    node_hashes
-                )
-            return list(node_hashes)[0]
-        except json.decoder.JSONDecodeError:
-            raise ValueError(
-            f'The file `{f}` is not in JSON format.'
-        )
-        except FileNotFoundError:
-            pass
-        return self._docvc.expand_hash_prefix(json_objref)
+    def _get_hash_from_objref(self, json_objref: str, source: str='any') -> None:
+        if source in ('any', 'file'):
+            try:
+                json_dict = load_json_file(json_objref)
+                node_hashes = self._docvc.get_associated_node_hashes(json_dict)
+                if len(node_hashes) == 0:
+                    raise DocNotTrackedError('JSON document not tracked in the system')
+                if len(node_hashes) > 1:
+                    raise SeveralNodesWithDocError(
+                        'Encountered several Nodes associated with the same JSON document',
+                        node_hashes
+                    )
+                return list(node_hashes)[0]
+            except json.decoder.JSONDecodeError:
+                raise ValueError(
+                f'The file `{f}` is not in JSON format.'
+            )
+            except FileNotFoundError as exc:
+                if source == 'file':
+                    raise
+        if source in ('any', 'cache'):
+            return self._docvc.expand_hash_prefix(json_objref)
+        raise ValueError('argument `source` must be one of `any`, `file`, `cache`')
 
-    def _get_doc_from_objref(self, json_objref: str, cache_only: bool=False) -> dict:
-        if not cache_only:
+    def _get_doc_from_objref(self, json_objref: str, source: str='any') -> dict:
+        if source in ('any', 'file'):
             try:
                 return load_json_file(json_objref)
             except FileNotFoundError:
-                pass
-        node_hash = self._docvc.expand_hash_prefix(json_objref)
-        return self._docvc.get_doc(node_hash)
+                if source == 'file':
+                    raise
+        if source in ('any', 'cache'):
+            node_hash = self._docvc.expand_hash_prefix(json_objref)
+            return self._docvc.get_doc(node_hash)
+        raise ValueError('argument `source` must be one of `any`, `file`, `cache`')
 
     def get_associated_node_hashes(self, json_file: Path) -> list[str]:
         json_dict = load_json_file(json_file)
@@ -308,15 +315,37 @@ class JsonFileVersionControl:
     def update(self, old_json_objref: str, new_json_objref: Path,
                message: str, force: bool=False) -> str:
         old_node_hash = self._get_hash_from_objref(old_json_objref)
-        new_json_dict = self._get_doc_from_objref(new_json_objref, cache_only=False)
+        new_json_dict = self._get_doc_from_objref(new_json_objref, source='any')
         return self._docvc.update(old_node_hash, new_json_dict, message, force)
+
+    def replace(self, target_json_file: Path, update_json_file: Path,
+                message: str, force: bool=False, target_hash_prefix: Optional[str]=None) -> str:
+        if target_hash_prefix is None:
+            target_node_hash = self._get_hash_from_objref(str(target_json_file), source='file')
+        else:
+            target_node_hashes = self.get_associated_node_hashes(target_json_file)
+            target_node_hash_matches = [
+                t for t in target_node_hashes
+                if t.startswith(target_hash_prefix)
+            ]
+            if len(target_node_hash_matches) > 1:
+                raise HashPrefixAmbiguousError(
+                    'The hash prefix matches several node hashes'
+                )
+            if len(target_node_hash_matches) == 0:
+                raise ValueError('Invalid target_node_hash provided')
+            target_node_hash = target_node_hash_matches[0]
+        new_json_dict = self._get_doc_from_objref(str(update_json_file), source='file')
+        ret = self._docvc.update(target_node_hash, new_json_dict, message, force)
+        update_json_file.replace(target_json_file)
+        return ret
 
     def get_log(self, json_objref: str) -> list[str]:
         node_hash = self._get_hash_from_objref(json_objref)
         return self._docvc.get_log(node_hash)
 
     def get_doc(self, json_objref: str, json_dumps_args: Optional[dict]=None) -> str:
-        json_dict = self._get_doc_from_objref(json_objref, cache_only=True)
+        json_dict = self._get_doc_from_objref(json_objref, source='cache')
         return json.dumps(json_dict, **json_dumps_args)
 
     def get_diff(self, old_json_objref: str, new_json_objref: str,
