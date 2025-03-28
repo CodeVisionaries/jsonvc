@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 from .storage import LocalJsonStorageProvider
 from .version_control import JsonFileVersionControl
+from .document_archive import JsonDocumentArchive
 from .custom_exceptions import (
     DocAlreadyTrackedError,
     SeveralNodesWithDocError,
@@ -113,6 +114,15 @@ def action_showdiff(old_short_hash, new_short_hash, json_dumps_args, filevc):
     print(filevc.get_diff(old_short_hash, new_short_hash, json_dumps_args))
     sys.exit(0)
 
+# document archive functionality
+
+def action_init_archive(filevc):
+    archive_file = Path('.json_archive')
+    doc_archive = JsonDocumentArchive(filevc, '')
+    doc_archive.save(archive_file)
+    sys.exit(0)
+
+# parser creation helper functions
 
 def _add_json_dumps_args(parser):
     parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
@@ -162,6 +172,14 @@ def _prepare_parser():
     showdiff_parser.add_argument('old_objref', type=str, help='Short-form hash of old file')
     showdiff_parser.add_argument('new_objref', type=str, help='Short-form hash of new file')
     _add_json_dumps_args(showdiff_parser)
+
+    archive_parser = subparsers.add_parser('archive', help='achive subcommand')
+    archive_subparsers = archive_parser.add_subparsers(
+        dest='archive_command', help='archive subcommands'
+    )
+
+    archive_subparsers.add_parser('init', help='init json archive')
+
     return parser
 
 
@@ -186,8 +204,17 @@ def _perform_action(args, filevc):
         action_showdiff(
             args.old_objref, args.new_objref, json_dumps_args, filevc
         )
+    elif args.command == 'archive':
+        _perform_archive_action(args, filevc)
     else:
         print('Unknown command. Useh --help for usage.')
+
+
+def _perform_archive_action(args, filevc):
+    if args.archive_command == 'init':
+        action_init_archive(filevc)
+    else:
+        raise ValueError('invalid archive subcommand')
 
 
 def _setup_storage_provider():
