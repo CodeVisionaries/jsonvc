@@ -40,6 +40,7 @@ class JsonTrackGraph:
             documentHash = doc_hash,
             sourceHashes = None,
             meta = meta,
+            hash_func = self._storage.compute_hash,
         )
         # update cache
         node_hash = self._storage.store(genesis_node.model_dump())
@@ -54,7 +55,10 @@ class JsonTrackGraph:
         patch_source_hashes = patch.get_source_hashes()
         doc_map = {}
         for snh in source_hashes:
-            source_node = JsonGraphNode(**self._storage.load(snh))
+            source_node = JsonGraphNode(
+                hash_func = self._storage.compute_hash,
+                **self._storage.load(snh)
+            )
             doc_hash = source_node.get_document_hash()
             doc_map[doc_hash] = snh
         if set(patch_source_hashes) != set(doc_map):
@@ -74,6 +78,7 @@ class JsonTrackGraph:
                 'given source document into a given destination document.'
             )
         new_node = JsonGraphNode(
+            hash_func = self._storage.compute_hash,
             extJsonPatchHash = patch_hash,
             documentHash = new_doc_hash,
             sourceHashes = source_hashes,
@@ -122,7 +127,10 @@ class JsonNodeCache:
             self._unavail_nodes.remove(node_hash)
         # node is available and we can query
         # information and cache it.
-        cur_node = JsonGraphNode(**self._storage.load(node_hash))
+        cur_node = JsonGraphNode(
+            hash_func=self._storage.compute_hash,
+            **self._storage.load(node_hash)
+        )
         # Here the function will fail if the node is not a valid JsonGraphNode
         source_node_hashes = cur_node.get_source_hashes()
         self._known_nodes[node_hash] = source_node_hashes
@@ -156,7 +164,10 @@ class JsonNodeCache:
 
     def get_node(self, node_hash: str) -> JsonGraphNode:
         self.update(node_hash)
-        return JsonGraphNode(**self._storage.load(node_hash))
+        return JsonGraphNode(
+            hash_func = self._storage.compute_hash,
+            **self._storage.load(node_hash)
+        )
 
 
 class JsonDocVersionControl:
@@ -207,19 +218,18 @@ class JsonDocVersionControl:
         self._cache.update(new_node)
         return new_node
 
-    def get_log(self, node_hash: str) -> list[str]:
+    def get_linear_history(self, node_hash: str) -> list[JsonGraphNode]:
         node_hashes = [node_hash]
-        versions = []
+        nodes = []
         while len(node_hashes) > 0:
             # TODO: extend log show capability to deal with merge commits
             if len(node_hashes) > 1:
                 raise SeveralAncestorsError('Several ancestors detected', node_hashes)
             cur_node_hash = list(node_hashes)[0]
             cur_node = self._cache.get_node(cur_node_hash)
-            cur_node_info = {'hash': cur_node_hash, 'meta': cur_node.get_meta()}
-            versions.append(cur_node_info)
+            nodes.append(cur_node)
             node_hashes = self._cache.get_node_ancestor_hashes(cur_node_hash)
-        return versions[::-1]
+        return nodes[::-1]
 
     def get_doc(self, node_hash: str) -> dict:
         node = self._cache.get_node(node_hash)
@@ -341,10 +351,10 @@ class JsonFileVersionControl:
         update_json_file.replace(target_json_file)
         return ret
 
-    def get_log(self, json_objref: str) -> list[str]:
+    def get_linear_history(self, json_objref: str) -> list[JsonGraphNode]:
         node_hash = self._get_hash_from_objref(json_objref)
-        log_info = self._docvc.get_log(node_hash)
-        return json.dumps(log_info)
+        linear_history = self._docvc.get_linear_history(node_hash)
+        return linear_history
 
     def get_doc(self, json_objref: str, json_dumps_args: Optional[dict]=None) -> str:
         json_dict = self._get_doc_from_objref(json_objref, source='cache')

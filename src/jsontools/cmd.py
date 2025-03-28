@@ -86,7 +86,12 @@ def action_showassoc(objref, filevc):
 
 def action_showlog(objref, filevc):
     try:
-        log_info = filevc.get_log(objref)
+        log_info = filevc.get_linear_history(objref)
+        for node in log_info:
+            short_hash = node.get_hash()[:7]
+            message = node.get_meta()['message']
+            print(f'{short_hash}: {message}')
+
     except SeveralNodesWithDocError as exc:
         print('This JSON document is associated with several nodes:\n')
         print('\n'.join(exc.node_hashes) + '\n')
@@ -96,7 +101,6 @@ def action_showlog(objref, filevc):
             'particular history'
         )
         sys.exit(1)
-    print(log_info)
     sys.exit(0)
 
 
