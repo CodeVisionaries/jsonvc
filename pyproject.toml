@@ -11,10 +11,7 @@ requires-python = ">=3.8"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "Julia Sprenger"},
-  { name = "Georg Schnabel"},
-  { name = "Thomas Stainer"},
-  { name = "Shin Okumura"},
+  { name = "CodeVisionaries Contributors"},
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
