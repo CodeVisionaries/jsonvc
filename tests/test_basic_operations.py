@@ -25,6 +25,17 @@ def _load_json_file(filename):
         return json.load(f)
 
 
+def test_track(test_dir, json_storage_dir):
+    store = LocalJsonStorageProvider(json_storage_dir)
+    fvc = JsonFileVersionControl(store)
+    orig_dict = {'a': 23}
+    orig_file = test_dir / 'orig.json'
+    _save_json_file(orig_file, orig_dict)
+    assert fvc.is_tracked(orig_file) is False
+    fvc.track(orig_file, message='first message')
+    assert fvc.is_tracked(orig_file) is True
+
+
 def test_update(test_dir, json_storage_dir):
     store = LocalJsonStorageProvider(json_storage_dir)
     fvc = JsonFileVersionControl(store)
