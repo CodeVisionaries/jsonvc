@@ -209,18 +209,17 @@ class JsonDocVersionControl:
 
     def get_log(self, node_hash: str) -> list[str]:
         node_hashes = [node_hash]
-        messages = []
+        versions = []
         while len(node_hashes) > 0:
             # TODO: extend log show capability to deal with merge commits
             if len(node_hashes) > 1:
                 raise SeveralAncestorsError('Several ancestors detected', node_hashes)
             cur_node_hash = list(node_hashes)[0]
             cur_node = self._cache.get_node(cur_node_hash)
-            meta = cur_node.get_meta()
-            message = meta.get('message', '')
-            messages.append(f"{cur_node_hash[:7]}: {message}")
+            cur_node_info = {'hash': cur_node_hash, 'meta': cur_node.get_meta()}
+            versions.append(cur_node_info)
             node_hashes = self._cache.get_node_ancestor_hashes(cur_node_hash)
-        return messages[::-1]
+        return versions[::-1]
 
     def get_doc(self, node_hash: str) -> dict:
         node = self._cache.get_node(node_hash)
@@ -344,7 +343,8 @@ class JsonFileVersionControl:
 
     def get_log(self, json_objref: str) -> list[str]:
         node_hash = self._get_hash_from_objref(json_objref)
-        return self._docvc.get_log(node_hash)
+        log_info = self._docvc.get_log(node_hash)
+        return json.dumps(log_info)
 
     def get_doc(self, json_objref: str, json_dumps_args: Optional[dict]=None) -> str:
         json_dict = self._get_doc_from_objref(json_objref, source='cache')
