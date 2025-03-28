@@ -319,9 +319,9 @@ class JsonFileVersionControl:
         json_dict = load_json_file(Path(json_file))
         return self._docvc.is_tracked(json_dict)
 
-    def track(self, json_file: Path, message: str) -> str:
+    def track(self, json_file: Path, message: str, force: bool=False) -> str:
         json_dict = load_json_file(Path(json_file))
-        return self._docvc.track(json_dict, message)
+        return self._docvc.track(json_dict, message, force)
 
     def update(self, old_json_objref: str, new_json_objref: Path,
                message: str, force: bool=False) -> str:
