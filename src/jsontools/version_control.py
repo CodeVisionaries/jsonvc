@@ -6,7 +6,6 @@ from .jsonpatch_ext import (
     create_ext_patch,
 )
 from .checksum import (
-    compute_json_hash,
     is_hash_prefix_wellformed,
 )
 from pathlib import Path
@@ -170,7 +169,7 @@ class JsonDocVersionControl:
     # methods taking json dicts as input
 
     def get_associated_node_hashes(self, json_dict: dict) -> list[str]:
-        json_hash = compute_json_hash(json_dict)
+        json_hash = self._storage.compute_hash(json_dict)
         return self._cache.find_associated_node_hashes(json_hash)
 
     def is_tracked(self, json_dict: dict) -> bool:
@@ -197,9 +196,10 @@ class JsonDocVersionControl:
         if self.is_tracked(new_json_dict) and not force:
             raise DocAlreadyTrackedError('The new JSON document is already in the system')
         old_json_dict = self.get_doc(old_node_hash)
-        ext_patch = create_ext_patch(old_json_dict, new_json_dict)
+        hash_func = self._storage.compute_hash
+        ext_patch = create_ext_patch(old_json_dict, new_json_dict, hash_func)
         meta = {'message': message}
-        new_doc_hash = compute_json_hash(new_json_dict)
+        new_doc_hash = self._storage.compute_hash(new_json_dict)
         source_node_hashes = [old_node_hash]
         new_node = self._graph.create_node(
             ext_patch, source_node_hashes, meta, new_doc_hash
@@ -247,7 +247,9 @@ class JsonDocVersionControl:
         # measure is due to issues, such as #138, #152, #160
         # reported at https://github.com/stefankoegl/python-json-patch/issues
         test_doc = apply_patch(old_json_dict, patch)
-        if compute_json_hash(new_json_dict) != compute_json_hash(test_doc):
+        new_json_hash = self._storage.compute_hash(new_json_dict)
+        test_hash = self._storage.compute_hash(test_doc)
+        if new_json_hash != test_hash:
             raise ValueError(
                 'An invalid patch has been created for the comparison. This '
                 'error is likely the result of a bug in the jsonpatch package.'

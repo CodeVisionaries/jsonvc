@@ -20,6 +20,11 @@ class JsonStorageProvider(ABC):
         """Check if JSON object associated with JSON hash exists"""
         pass
 
+    @abstractmethod
+    def compute_hash(self, json_dict: dict) -> str:
+        """Compute the hash of a JSON object"""
+        pass
+
 
 class JsonObjectIndex(ABC):
 
@@ -47,6 +52,9 @@ class LocalJsonStorageProvider(JsonStorageProvider, JsonObjectIndex):
 
     def exists(self, json_hash: str) -> bool:
         return jsu.is_json_object_stored(json_hash, self._storage_dir)
+
+    def compute_hash(self, json_dict: dict) -> str:
+        return jsu.compute_json_hash(json_dict)
 
     def index(self):
         itera = self._storage_dir.iterdir()

@@ -3,7 +3,6 @@ import json
 from copy import deepcopy
 from typing import Callable
 from .json.base_models import ExtJsonPatchBase
-from .checksum import compute_json_hash
 
 
 def create_patch(old_json_dict: dict, new_json_dict: dict) -> list:
@@ -12,8 +11,8 @@ def create_patch(old_json_dict: dict, new_json_dict: dict) -> list:
     )
 
 
-def create_ext_patch(old_json_dict: dict, new_json_dict: dict) -> list:
-    old_hash = compute_json_hash(old_json_dict)
+def create_ext_patch(old_json_dict: dict, new_json_dict: dict, hash_func: Callable) -> list:
+    old_hash = hash_func(old_json_dict)
     old_ext_dict = {'object': old_json_dict}
     new_ext_dict = {'object': new_json_dict}
     patch = create_patch(old_ext_dict, new_ext_dict)
