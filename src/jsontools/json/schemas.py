@@ -80,3 +80,24 @@ ext_json_patch_schema = {
     'required': ['sourceHashes', 'target', 'operations'],
 }
 schema_list.append(ext_json_patch_schema)
+
+
+json_document_archive_schema = {
+    '$schema': 'https://json-schema.org/draft/2020-12/schema',
+    'version': '0.0.1',
+    'title': 'JsonDocumentArchiveBase',
+    'description': 'Collection of JSON document references in hierarchical structure',
+    'type': 'object',
+    'properties': {
+        'rootPath': {
+            'type': ['string', 'null'],
+            'description': 'Path to root directory on filesystem',
+        },
+        'archive': {
+            'type': 'object',
+            'description': 'Nested collection of JSON document references',
+        },
+    },
+    'required': ['rootPath', 'archive'],
+}
+schema_list.append(json_document_archive_schema)

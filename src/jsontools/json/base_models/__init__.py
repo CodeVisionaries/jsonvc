@@ -1,2 +1,3 @@
+from .json_document_archive_base import JsonDocumentArchiveBase
 from .ext_json_patch_base import ExtJsonPatchBase
 from .json_graph_node_base import JsonGraphNodeBase
