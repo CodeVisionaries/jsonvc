@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
   "jsontools",
   "pydantic>=2.0.0",
+  "jsonpatch",
 ]
 
 [tool.hatch.version]
