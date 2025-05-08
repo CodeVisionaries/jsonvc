@@ -173,6 +173,10 @@ class JsonNodeCache:
 class JsonDocVersionControl:
 
     def __init__(self, storage_provider: JsonStorageProvider) -> None:
+        if not isinstance(storage_provider, JsonStorageProvider):
+            raise TypeError(
+                'argument `storage provider` must be instance of `JsonStorageProvider`'
+            )
         self._graph = JsonTrackGraph(storage_provider)
         self._cache = JsonNodeCache(storage_provider)
         self._storage = storage_provider
