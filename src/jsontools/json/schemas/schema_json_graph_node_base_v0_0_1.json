@@ -11,16 +11,12 @@
         "string",
         "null"
       ],
-      "minLength": 64,
-      "maxLength": 64,
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-zA-Z]{40,}$"
     },
     "documentHash": {
       "description": "sha256 hexdigest of associated JSON document",
       "type": "string",
-      "minLength": 64,
-      "maxLength": 64,
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-zA-Z]{40,}$"
     },
     "sourceHashes": {
       "description": "List with source node hashes",
@@ -31,9 +27,7 @@
       "items": {
         "description": "sha256 hash of source node",
         "type": "string",
-        "minLength": 64,
-        "maxLength": 64,
-        "pattern": "^[0-9a-f]{64}$"
+        "pattern": "^[0-9a-zA-Z]{40,}$"
       },
       "additionalProperties": false
     },

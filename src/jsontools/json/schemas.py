@@ -6,16 +6,14 @@ schema_list = []
 # recurring property templates
 
 _fieldname_regex = '^[0-9a-zA-Z_-]+$'
-_hexstr64_regex = '^[0-9a-f]{64}$'
+_content_id_regex = '^[0-9a-zA-Z]{40,}$'
 
-_hexstr64_property = lambda descr = None, optional=False: {
+_cid_property = lambda descr = None, optional=False: {
     k: v if not optional or k != 'type' else [v, 'null'] for k, v in {
         k: v for k, v in {
             'description': descr, 
             'type': 'string',
-            'minLength': 64,
-            'maxLength': 64,
-            'pattern': _hexstr64_regex
+            'pattern': _content_id_regex
         }.items() if descr is not None or k != 'description'
     }.items()
 }
@@ -36,14 +34,14 @@ json_graph_node_schema = {
     'description': 'Stores reference to JSON object and to JSON patch that generated it',
     'type': 'object',
     'properties': {
-        'extJsonPatchHash': _hexstr64_property(
+        'extJsonPatchHash': _cid_property(
             'sha256 hexdigest of extJsonPatch document', optional=True
         ),
-        'documentHash': _hexstr64_property('sha256 hexdigest of associated JSON document'),
+        'documentHash': _cid_property('sha256 hexdigest of associated JSON document'),
         'sourceHashes': {
             'description': 'List with source node hashes',
             'type': ['array', 'null'],
-            'items': _hexstr64_property('sha256 hash of source node'),
+            'items': _cid_property('sha256 hash of source node'),
             'additionalProperties': False,
         },
         'meta': {
@@ -67,7 +65,7 @@ ext_json_patch_schema = {
             'description': 'Mapping of aliases to source documents identiied by sha256 hexdigets',
             'type': 'object',
             'patternProperties': {
-                _fieldname_regex: _hexstr64_property('sha256 hexdigest of source document', optional=True),
+                _fieldname_regex: _cid_property('sha256 hexdigest of source document', optional=True),
             },
             'additionalProperties': False,
         },
