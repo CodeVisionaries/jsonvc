@@ -100,6 +100,24 @@ class JsonNodeCache:
             self._should_skip = lambda h: self._storage.size(h) > 1000
             self.discover_nodes(self._storage.index())
 
+    def to_dict(self):
+        known_nodes = {h: sorted(v) for h, v in self._known_nodes.items()}
+        known_docs = {h: sorted(v) for h, v in self._known_docs.items()}
+        return {
+            'known_nodes': known_nodes,
+            'known_docs': known_docs,
+        }
+
+    def from_dict(self, cache_dict, update=True):
+        known_nodes = {h: set(v) for h, v in cache_dict['known_nodes'].items()}
+        known_docs = {h: set(v) for h, v in cache_dict['known_docs'].items()}
+        if update:
+            self._known_nodes.update(known_nodes)
+            self._known_docs.update(known_docs)
+        else:
+            self._known_nodes = known_nodes
+            self._known_docs = known_docs
+
     def get_storage_provider(self) -> JsonStorageProvider:
         return self._storage
 
