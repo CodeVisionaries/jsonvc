@@ -40,7 +40,7 @@ def read_config_file():
 def write_config_file(config_dict):
     config_path = get_config_filepath()
     with open(config_path, 'w') as f:
-        json.dump(f, config_dict)
+        json.dump(config_dict, f)
 
 
 def update_config_file(config_update):
@@ -200,6 +200,20 @@ def action_config_show():
     sys.exit(0)
 
 
+def action_config_set(key, value):
+    allowed_keys = ('storage-backend',)
+    if key not in allowed_keys:
+        print(f'key must be in ({", ".join(allowed_keys)})')
+        sys.exit(1)
+    if key == 'storage-backend':
+        allowed_values = ('local', 'ipfs')
+        if value not in allowed_values:
+            print(f'value must be in ({", ".join(allowed_values)})')
+            sys.exit(1)
+
+    update_config_file({key: value})
+
+
 def _add_json_dumps_args(parser):
     parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
 
@@ -263,6 +277,9 @@ def _prepare_config_subparser(subparsers):
     subparsers = config_parser.add_subparsers(dest='config_command', help='Available commands')
     subparsers.add_parser('showdir', help='Show configuration directory')
     subparsers.add_parser('show', help='Show the configuration')
+    set_parser = subparsers.add_parser('set', help='Set configuration variable')
+    set_parser.add_argument('key', help='variable name')
+    set_parser.add_argument('value', help='value')
 
 
 def _perform_action(args, filevc):
@@ -291,8 +308,10 @@ def _perform_action(args, filevc):
     elif args.command == 'config':
         if args.config_command == 'showdir':
             action_config_showdir()
-        if args.config_command == 'show':
+        elif args.config_command == 'show':
             action_config_show()
+        elif args.config_command == 'set':
+            action_config_set(args.key, args.value)
         else:
             print('Unknown config command. Use --help for usage')
     else:
