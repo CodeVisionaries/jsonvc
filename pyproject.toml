@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "jsontools"
+name = "jsonvc"
 dynamic = ["version"]
 description = 'Convenience tool for using the json ecosystem for provenance tracking'
 readme = "README.md"
@@ -25,14 +25,14 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "jsontools",
+  "jsonvc",
   "pydantic>=2.0.0",
   "jsonpatch",
   "requests",
 ]
 
 [tool.hatch.version]
-path = "src/jsontools/__about__.py"
+path = "src/jsonvc/__about__.py"
 
 [tool.hatch.envs.types]
 extra-dependencies = [
@@ -40,19 +40,19 @@ extra-dependencies = [
   "datamodel-code-generation",
 ]
 [tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/jsontools tests}"
+check = "mypy --install-types --non-interactive {args:src/jsonvc tests}"
 
 [tool.coverage.run]
-source_pkgs = ["jsontools", "tests"]
+source_pkgs = ["jsonvc", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/jsontools/__about__.py",
+  "src/jsonvc/__about__.py",
 ]
 
 [tool.coverage.paths]
-jsontools = ["src/jsontools", "*/jsontools/src/jsontools"]
-tests = ["tests", "*/jsontools/tests"]
+jsonvc = ["src/jsonvc", "*/jsonvc/src/jsonvc"]
+tests = ["tests", "*/jsonvc/tests"]
 
 [tool.coverage.report]
 exclude_lines = [
