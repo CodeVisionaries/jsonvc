@@ -14,6 +14,7 @@ from platformdirs import user_config_dir
 
 
 APP_NAME = 'jsonvc'
+CONFIG_FILENAME = 'config.json'
 CACHE_FILENAME = 'cache.json'
 
 
@@ -21,6 +22,31 @@ def get_config_dir():
     config_dir = user_config_dir(APP_NAME)
     os.makedirs(config_dir, exist_ok=True)
     return config_dir
+
+
+def get_config_filepath():
+    config_dir = get_config_dir()
+    return os.path.join(config_dir, CONFIG_FILENAME)
+
+
+def read_config_file():
+    config_path = get_config_filepath()
+    if not os.path.isfile(config_path):
+        return {}
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+
+def write_config_file(config_dict):
+    config_path = get_config_filepath()
+    with open(config_path, 'w') as f:
+        json.dump(f, config_dict)
+
+
+def update_config_file(config_update):
+    config = read_config_file()
+    config.update(config_update)
+    write_config_file(config)
 
 
 def get_cache_filepath():
@@ -163,8 +189,14 @@ def action_discover(node_hashes, filevc):
     sys.exit(0)
 
 
-def action_show_config_dir():
+def action_config_showdir():
     print(get_config_dir())
+    sys.exit(0)
+
+
+def action_config_show():
+    config = read_config_file()
+    print(json.dumps(config, indent=2))
     sys.exit(0)
 
 
@@ -230,6 +262,7 @@ def _prepare_config_subparser(subparsers):
     config_parser = subparsers.add_parser('config', help='Management of configuration file')
     subparsers = config_parser.add_subparsers(dest='config_command', help='Available commands')
     subparsers.add_parser('showdir', help='Show configuration directory')
+    subparsers.add_parser('show', help='Show the configuration')
 
 
 def _perform_action(args, filevc):
@@ -257,7 +290,9 @@ def _perform_action(args, filevc):
         action_discover(args.node_hashes, filevc)
     elif args.command == 'config':
         if args.config_command == 'showdir':
-            action_show_config_dir()
+            action_config_showdir()
+        if args.config_command == 'show':
+            action_config_show()
         else:
             print('Unknown config command. Use --help for usage')
     else:
