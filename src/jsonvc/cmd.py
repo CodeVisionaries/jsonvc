@@ -222,8 +222,14 @@ def _prepare_parser():
     discover_parser = subparsers.add_parser('discover', help='Discover tracking nodes starting from seed nodes')
     discover_parser.add_argument('node_hashes', nargs='+', help='List with seed node hashes')
 
-    show_config_dir_parser = subparsers.add_parser('show-config-dir', help='show path to configuration directory')
+    _prepare_config_subparser(subparsers)
     return parser
+
+
+def _prepare_config_subparser(subparsers):
+    config_parser = subparsers.add_parser('config', help='Management of configuration file')
+    subparsers = config_parser.add_subparsers(dest='config_command', help='Available commands')
+    subparsers.add_parser('showdir', help='Show configuration directory')
 
 
 def _perform_action(args, filevc):
@@ -249,10 +255,13 @@ def _perform_action(args, filevc):
         )
     elif args.command == 'discover':
         action_discover(args.node_hashes, filevc)
-    elif args.command == 'show-config-dir':
-        action_show_config_dir()
+    elif args.command == 'config':
+        if args.config_command == 'showdir':
+            action_show_config_dir()
+        else:
+            print('Unknown config command. Use --help for usage')
     else:
-        print('Unknown command. Useh --help for usage.')
+        print('Unknown command. Use --help for usage.')
 
 
 def _setup_storage_provider():
