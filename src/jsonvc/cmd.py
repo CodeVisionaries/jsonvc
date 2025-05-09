@@ -154,8 +154,17 @@ def action_showdiff(old_short_hash, new_short_hash, json_dumps_args, filevc):
     sys.exit(0)
 
 
+def action_discover(node_hashes, filevc):
+    discovered_nodes = filevc.get_cache().discover_nodes(node_hashes)
+    write_cache_file(filevc.get_cache().to_dict())
+    print('Discovered nodes:')
+    print('\n'.join(discovered_nodes))
+    sys.exit(0)
+
+
 def action_show_config_dir():
     print(get_config_dir())
+    sys.exit(0)
 
 
 def _add_json_dumps_args(parser):
@@ -207,6 +216,9 @@ def _prepare_parser():
     showdiff_parser.add_argument('new_objref', type=str, help='Short-form hash of new file')
     _add_json_dumps_args(showdiff_parser)
 
+    discover_parser = subparsers.add_parser('discover', help='Discover tracking nodes starting from seed nodes')
+    discover_parser.add_argument('node_hashes', nargs='+', help='List with seed node hashes')
+
     show_config_dir_parser = subparsers.add_parser('show-config-dir', help='show path to configuration directory')
     return parser
 
@@ -232,6 +244,8 @@ def _perform_action(args, filevc):
         action_showdiff(
             args.old_objref, args.new_objref, json_dumps_args, filevc
         )
+    elif args.command == 'discover':
+        action_discover(args.node_hashes, filevc)
     elif args.command == 'show-config-dir':
         action_show_config_dir()
     else:
