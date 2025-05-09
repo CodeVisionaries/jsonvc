@@ -201,7 +201,7 @@ def action_config_show():
 
 
 def action_config_set(key, value):
-    allowed_keys = ('storage-backend',)
+    allowed_keys = ('storage-backend', 'local-storage-path', 'ipfs-gateway', 'ipfs-rpc-endpoint')
     if key not in allowed_keys:
         print(f'key must be in ({", ".join(allowed_keys)})')
         sys.exit(1)
@@ -210,7 +210,6 @@ def action_config_set(key, value):
         if value not in allowed_values:
             print(f'value must be in ({", ".join(allowed_values)})')
             sys.exit(1)
-
     update_config_file({key: value})
 
 
@@ -282,7 +281,46 @@ def _prepare_config_subparser(subparsers):
     set_parser.add_argument('value', help='value')
 
 
-def _perform_action(args, filevc):
+def _setup_storage_provider():
+    config = read_config_file()
+    if config['storage-backend'] == 'local':
+        if 'JSON_STORAGE_PATH' not in os.environ:
+            storage_path = config.get('local-storage-path', None)
+            if storage_path is None:
+                print(
+                    'Please define environment variable JSON_STORAGE_PATH '
+                    'with the path to the JSON document storage or set the '
+                    '`local-storage-path` variable in the configuration'
+                )
+                sys.exit(1)
+        else:
+            storage_path = os.environ['JSON_STORAGE_PATH']
+
+        storage_path = Path(storage_path)
+        if not storage_path.is_dir():
+            print(
+                f'The directory `{storage_path}` to store JSON objects '
+                'does not exist. Either create it or set the environment variable '
+                '`JSON_STORAGE_PATH` to point to an existing directory or '
+                'set the `local-storage-path` variable in the configuration'
+            )
+            sys.exit(1)
+        return LocalJsonStorageProvider(storage_path)
+
+
+def _perform_config_action(args):
+    if args.config_command == 'showdir':
+        action_config_showdir()
+    elif args.config_command == 'show':
+        action_config_show()
+    elif args.config_command == 'set':
+        action_config_set(args.key, args.value)
+    else:
+        print('Unknown config command. Use --help for usage')
+    return
+
+
+def _perform_regular_action(args, filevc):
     if args.command == 'track':
         action_track(args.filename, args.message, filevc)
     elif args.command == 'istracked':
@@ -305,50 +343,33 @@ def _perform_action(args, filevc):
         )
     elif args.command == 'discover':
         action_discover(args.node_hashes, filevc)
-    elif args.command == 'config':
-        if args.config_command == 'showdir':
-            action_config_showdir()
-        elif args.config_command == 'show':
-            action_config_show()
-        elif args.config_command == 'set':
-            action_config_set(args.key, args.value)
-        else:
-            print('Unknown config command. Use --help for usage')
     else:
         print('Unknown command. Use --help for usage.')
 
 
-def _setup_storage_provider():
-    if 'JSON_STORAGE_PATH' not in os.environ:
-        raise TypeError(
-            'Please define environment variable JSON_STORAGE_PATH '
-            'with the path to the JSON document storage'
-        )
-    storage_path = Path(os.environ['JSON_STORAGE_PATH'])
-    if not storage_path.is_dir():
-        raise TypeError(
-            'Please ensure that JSON_STORAGE_PATH points to '
-            'an existing and writable directory on your computer'
-        )
-    return LocalJsonStorageProvider(storage_path)
+def _perform_action(args):
+    if args.command == 'config':
+        return _perform_config_action(args)
 
-
-def main():
     cache_dict = read_cache_file()
     store = _setup_storage_provider()
     filevc = JsonFileVersionControl(store)
     filevc.get_cache().from_dict(cache_dict)
 
+    _perform_regular_action(args, filevc)
+
+
+def main():
     parser = _prepare_parser()
     args = parser.parse_args()
     if not args.debug:
         try:
-            _perform_action(args, filevc)
+            _perform_action(args)
         except Exception as e:
             print(str(e))
             sys.exit(1)
     else:
-        _perform_action(args, filevc)
+        _perform_action(args)
 
 
 if __name__ == '__main__':
