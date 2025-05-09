@@ -112,7 +112,7 @@ def action_replace(target_file, update_file, message, force, targethash, filevc)
     sys.exit(0)
 
 
-def action_showassoc(objref, filevc):
+def action_showassoc(objref, full_hash, filevc):
     assoc_node_hashes = filevc.get_associated_node_hashes(objref)
     if len(assoc_node_hashes) == 0:
         print('This referenced JSON document is not tracked.')
@@ -120,15 +120,16 @@ def action_showassoc(objref, filevc):
     print('The referencd JSON document is associated with the following nodes:')
     messages = filevc.get_messages(objref)
     for h, m in messages.items():
-        sh = h[:10]
+        sh = h if full_hash else h[:10]
         print(f'{sh}: {m}')
 
 
-def action_showlog(objref, filevc):
+def action_showlog(objref, full_hash, filevc):
     try:
         log_info = filevc.get_linear_history(objref)
         for node in log_info:
-            short_hash = node.get_hash()[:7]
+            h = node.get_hash()
+            short_hash = h if full_hash else h[:10]
             message = node.get_meta()['message']
             print(f'{short_hash}: {message}')
 
@@ -202,9 +203,11 @@ def _prepare_parser():
     _add_message_arg(replace_parser)
 
     showassoc_parser = subparsers.add_parser('showassoc', help='Show nodes associated with JSON document')
+    showassoc_parser.add_argument('--full-hash', action='store_true', help='Show full hash in output')
     showassoc_parser.add_argument('objref', type=str, help='JSON document reference')
 
     showlog_parser = subparsers.add_parser('showlog', help='Show history of a file')
+    showlog_parser.add_argument('--full-hash', action='store_true', help='Show full hash in output')
     showlog_parser.add_argument('objref', type=str, help='JSON document whose history is desired')
 
     showdoc_parser = subparsers.add_parser('showdoc', help='Print json object on stdout')
@@ -233,9 +236,9 @@ def _perform_action(args, filevc):
     elif args.command == 'replace':
         action_replace(args.target_file, args.update_file, args.message, args.force, args.targethash, filevc)
     elif args.command == 'showassoc':
-        action_showassoc(args.objref, filevc)
+        action_showassoc(args.objref, args.full_hash, filevc)
     elif args.command == 'showlog':
-        action_showlog(args.objref, filevc)
+        action_showlog(args.objref, args.full_hash, filevc)
     elif args.command == 'showdoc':
         json_dumps_args = {'indent': args.indent}
         action_showdoc(args.objref, json_dumps_args, filevc)
