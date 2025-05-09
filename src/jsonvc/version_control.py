@@ -154,16 +154,19 @@ class JsonNodeCache:
         self.update_node_cache(node_hash, source_node_hashes)
 
     def discover_nodes(self, seed_node_hashes: List[str]):
+        visited_nodes = set()
         for node_hash in seed_node_hashes:
-            if self._should_skip(node_hash):
+            already_visited = node_hash in self._known_nodes
+            self.update(node_hash)
+            if node_hash not in self._known_nodes:
+                # some problem retrieving the node
                 continue
-            try:
-                self.update(node_hash)
-            except Exception:  # TODO: more fine-grained exception handling
-                continue
+            if not already_visited:
+                visited_nodes.add(node_hash)
             source_node_hashes = self._known_nodes[node_hash]
             nodes_to_visit = source_node_hashes.difference(self._known_nodes)
-            self.discover_nodes(nodes_to_visit)
+            visited_nodes.update(self.discover_nodes(nodes_to_visit))
+        return visited_nodes
 
     def find_associated_node_hashes(self, doc_hash: str) -> List[str]:
         return self._known_docs.get(doc_hash, set()).copy()
