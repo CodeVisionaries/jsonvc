@@ -1,4 +1,4 @@
-# jsonvc - Version Control for JSON Files
+### jsonvc - Version Control for JSON Files
 
 [![PyPI - Version](https://img.shields.io/pypi/v/jsontools.svg)](https://pypi.org/project/jsontools)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jsontools.svg)](https://pypi.org/project/jsontools)
