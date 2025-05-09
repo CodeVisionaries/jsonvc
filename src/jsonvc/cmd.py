@@ -5,6 +5,7 @@ from pathlib import Path
 import argparse
 from .checksum import get_unique_json_repr
 from .storage import LocalJsonStorageProvider
+from .ipfs_storage import IpfsJsonStorageProvider
 from .version_control import JsonFileVersionControl
 from .custom_exceptions import (
     DocAlreadyTrackedError,
@@ -201,7 +202,13 @@ def action_config_show():
 
 
 def action_config_set(key, value):
-    allowed_keys = ('storage-backend', 'local-storage-path', 'ipfs-gateway', 'ipfs-rpc-endpoint')
+    allowed_keys = (
+        'storage-backend',
+        'local-storage-path',
+        'ipfs-gateway-url',
+        'ipfs-rpc-url',
+        'ipfs-cache-dir',
+    )
     if key not in allowed_keys:
         print(f'key must be in ({", ".join(allowed_keys)})')
         sys.exit(1)
@@ -281,31 +288,49 @@ def _prepare_config_subparser(subparsers):
     set_parser.add_argument('value', help='value')
 
 
+def _setup_local_storage_provider(config):
+    if 'JSON_STORAGE_PATH' not in os.environ:
+        storage_path = config.get('local-storage-path', None)
+        if storage_path is None:
+            print(
+                'Please define environment variable JSON_STORAGE_PATH '
+                'with the path to the JSON document storage or set the '
+                '`local-storage-path` variable in the configuration'
+            )
+            sys.exit(1)
+    else:
+        storage_path = os.environ['JSON_STORAGE_PATH']
+
+    storage_path = Path(storage_path)
+    if not storage_path.is_dir():
+        print(
+            f'The directory `{storage_path}` to store JSON objects '
+            'does not exist. Either create it or set the environment variable '
+            '`JSON_STORAGE_PATH` to point to an existing directory or '
+            'set the `local-storage-path` variable in the configuration'
+        )
+        sys.exit(1)
+    return LocalJsonStorageProvider(storage_path)
+
+
+def _setup_ipfs_storage_provider(config):
+    req_vars = ('ipfs-cache-dir', 'ipfs-gateway-url', 'ipfs-rpc-url')
+    var_missing = False
+    for v in req_vars:
+        if v not in config:
+            var_missing = True
+            print(f'Please set variable `{v}` in configuration')
+    if var_missing:
+        sys.exit(1)
+    return IpfsJsonStorageProvider(*(config[v] for v in req_vars))
+
+
 def _setup_storage_provider():
     config = read_config_file()
     if config['storage-backend'] == 'local':
-        if 'JSON_STORAGE_PATH' not in os.environ:
-            storage_path = config.get('local-storage-path', None)
-            if storage_path is None:
-                print(
-                    'Please define environment variable JSON_STORAGE_PATH '
-                    'with the path to the JSON document storage or set the '
-                    '`local-storage-path` variable in the configuration'
-                )
-                sys.exit(1)
-        else:
-            storage_path = os.environ['JSON_STORAGE_PATH']
-
-        storage_path = Path(storage_path)
-        if not storage_path.is_dir():
-            print(
-                f'The directory `{storage_path}` to store JSON objects '
-                'does not exist. Either create it or set the environment variable '
-                '`JSON_STORAGE_PATH` to point to an existing directory or '
-                'set the `local-storage-path` variable in the configuration'
-            )
-            sys.exit(1)
-        return LocalJsonStorageProvider(storage_path)
+        return _setup_local_storage_provider(config)
+    elif config['storage-backend'] == 'ipfs':
+        return _setup_ipfs_storage_provider(config)
 
 
 def _perform_config_action(args):
