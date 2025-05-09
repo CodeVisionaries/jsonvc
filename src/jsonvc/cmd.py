@@ -205,7 +205,7 @@ def _setup_storage_provider():
     return LocalJsonStorageProvider(storage_path)
 
 
-if __name__ == '__main__':
+def main():
     store = _setup_storage_provider()
     filevc = JsonFileVersionControl(store)
 
@@ -219,3 +219,7 @@ if __name__ == '__main__':
             sys.exit(1)
     else:
         _perform_action(args, filevc)
+
+
+if __name__ == '__main__':
+    main()

@@ -31,6 +31,9 @@ dependencies = [
   "requests",
 ]
 
+[project.scripts]
+jsonvc = "jsonvc.cmd:main"
+
 [tool.hatch.version]
 path = "src/jsonvc/__about__.py"
 
