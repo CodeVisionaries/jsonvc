@@ -27,13 +27,13 @@ Change into the `examples/` directory. Here are example instructions for Linux a
 mkdir json_storage
 export JSON_STORAGE_PATH="$(pwd)/json_storage"
 
-python -m jsonvc.cmd istracked first.json
-python -m jsonvc.cmd track first.json -m 'first version'
-python -m jsonvc.cmd update first.json second.json -m 'modify json file'
-python -m jsonvc.cmd istracked first.json
-python -m jsonvc.cmd showlog first.json
-python -m jsonvc.cmd showlog second.json
-python -m jsonvc.cmd showdiff 2388597
+jsonvc istracked first.json
+jsonvc track first.json -m 'first version'
+jsonvc update first.json second.json -m 'modify json file'
+jsonvc istracked first.json
+jsonvc showlog first.json
+jsonvc showlog second.json
+jsonvc showdiff 2388597
 ```
 
 
