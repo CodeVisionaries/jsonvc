@@ -1,4 +1,4 @@
-# jsontools
+# jsonvc - Version Control for JSON Files
 
 [![PyPI - Version](https://img.shields.io/pypi/v/jsontools.svg)](https://pypi.org/project/jsontools)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jsontools.svg)](https://pypi.org/project/jsontools)
@@ -15,7 +15,8 @@
 ## Installation
 
 ```console
-pip install jsontools
+git clone https://github.com/CodeVisionaries/jsonvc.git
+pip install ./jsonvc
 ```
 
 ## Example
@@ -26,16 +27,16 @@ Change into the `examples/` directory. Here are example instructions for Linux a
 mkdir json_storage
 export JSON_STORAGE_PATH="$(pwd)/json_storage"
 
-python -m jsontools.cmd istracked first.json
-python -m jsontools.cmd track first.json -m 'first version'
-python -m jsontools.cmd update first.json second.json -m 'modify json file'
-python -m jsontools.cmd istracked first.json
-python -m jsontools.cmd showlog first.json
-python -m jsontools.cmd showlog second.json
-python -m jsontools.cmd showdiff 2388597
+python -m jsonvc.cmd istracked first.json
+python -m jsonvc.cmd track first.json -m 'first version'
+python -m jsonvc.cmd update first.json second.json -m 'modify json file'
+python -m jsonvc.cmd istracked first.json
+python -m jsonvc.cmd showlog first.json
+python -m jsonvc.cmd showlog second.json
+python -m jsonvc.cmd showdiff 2388597
 ```
 
 
 ## License
 
-`jsontools` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`jsonvc` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
