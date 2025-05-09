@@ -1,18 +1,56 @@
 import os
 import sys
+import json
 from pathlib import Path
 import argparse
+from .checksum import get_unique_json_repr
 from .storage import LocalJsonStorageProvider
 from .version_control import JsonFileVersionControl
 from .custom_exceptions import (
     DocAlreadyTrackedError,
     SeveralNodesWithDocError,
 )
+from platformdirs import user_config_dir
+
+
+APP_NAME = 'jsonvc'
+CACHE_FILENAME = 'cache.json'
+
+
+def get_config_dir():
+    config_dir = user_config_dir(APP_NAME)
+    os.makedirs(config_dir, exist_ok=True)
+    return config_dir
+
+
+def get_cache_filepath():
+    config_dir = get_config_dir()
+    return os.path.join(config_dir, CACHE_FILENAME)
+
+
+def read_cache_file():
+    cache_path = get_cache_filepath()
+    if not os.path.isfile(cache_path):
+        return {
+            'known_nodes': {},
+            'known_docs': {},
+        }
+    else:
+        with open(cache_path, 'r') as f:
+            return json.load(f)
+
+
+def write_cache_file(cache_dict):
+    cache_path = get_cache_filepath()
+    jsonstr = get_unique_json_repr(cache_dict)
+    with open(cache_path, 'w') as f:
+        f.write(jsonstr)
 
 
 def action_track(filename, message, filevc):
     filename = Path(filename)
     node_hash = filevc.track(filename, message)
+    write_cache_file(filevc.get_cache().to_dict())
     print(f'Now tracking file {filename.name}.')
     print(f'Associated node hash: {node_hash}')
     sys.exit(0)
@@ -36,6 +74,7 @@ def action_istracked(filename, filevc):
 def action_update(old_objref, new_objref, message, force, filevc):
     try:
         filevc.update(old_objref, new_objref, message, force)
+        write_cache_file(filevc.get_cache().to_dict())
     except DocAlreadyTrackedError:
         print(
             'The new document is already in the system.\n'
@@ -56,6 +95,7 @@ def action_update(old_objref, new_objref, message, force, filevc):
 def action_replace(target_file, update_file, message, force, targethash, filevc):
     try:
         filevc.replace(target_file, update_file, message, force, targethash)
+        write_cache_file(filevc.get_cache().to_dict())
     except DocAlreadyTrackedError:
         print(
             f'The JSON document in {update_file.name} is already in the system.\n'
@@ -114,6 +154,10 @@ def action_showdiff(old_short_hash, new_short_hash, json_dumps_args, filevc):
     sys.exit(0)
 
 
+def action_show_config_dir():
+    print(get_config_dir())
+
+
 def _add_json_dumps_args(parser):
     parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
 
@@ -162,6 +206,8 @@ def _prepare_parser():
     showdiff_parser.add_argument('old_objref', type=str, help='Short-form hash of old file')
     showdiff_parser.add_argument('new_objref', type=str, help='Short-form hash of new file')
     _add_json_dumps_args(showdiff_parser)
+
+    show_config_dir_parser = subparsers.add_parser('show-config-dir', help='show path to configuration directory')
     return parser
 
 
@@ -186,6 +232,8 @@ def _perform_action(args, filevc):
         action_showdiff(
             args.old_objref, args.new_objref, json_dumps_args, filevc
         )
+    elif args.command == 'show-config-dir':
+        action_show_config_dir()
     else:
         print('Unknown command. Useh --help for usage.')
 
@@ -206,8 +254,10 @@ def _setup_storage_provider():
 
 
 def main():
+    cache_dict = read_cache_file()
     store = _setup_storage_provider()
     filevc = JsonFileVersionControl(store)
+    filevc.get_cache().from_dict(cache_dict)
 
     parser = _prepare_parser()
     args = parser.parse_args()
