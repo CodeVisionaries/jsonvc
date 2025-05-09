@@ -96,9 +96,6 @@ class JsonNodeCache:
         self._known_docs = dict()
         self._unavail_nodes = set()
         self._should_skip = lambda h: False
-        if isinstance(storage_provider, JsonObjectIndex):
-            self._should_skip = lambda h: self._storage.size(h) > 1000
-            self.discover_nodes(self._storage.index())
 
     def to_dict(self):
         known_nodes = {h: sorted(v) for h, v in self._known_nodes.items()}
