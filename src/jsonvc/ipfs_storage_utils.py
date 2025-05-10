@@ -44,14 +44,16 @@ def _store_json_object(json_dict: dict, rpc_api_url: str, only_hash: bool=False)
     json_bytes = jsonstr.encode('utf-8')
     file_obj = BytesIO(json_bytes)
     files = {'file': ('dummy', file_obj)}
-    if not only_hash:
-        upload_url = rpc_api_url.rstrip('/') + '/upload'
-    else:
-        upload_url = rpc_api_url.rstrip('/') + '/get-content-identifier'
-    response = requests.post(upload_url, files=files)
+    ipfs_add_url = rpc_api_url.rstrip('/') + '/v0/add'
+    params = {'only-hash': only_hash}
+    response = requests.post(ipfs_add_url, params=params, files=files)
     if response.status_code != 200:
-        raise Exception(f'Upload failed: HTTP {response.status_code} - {response.text}')
-    return response.json()['content_identifier']
+        if only_hash:
+            message_prefix = 'CID determination failed'
+        else:
+            message_prefix = 'Upload filed'
+        raise Exception(f'{message_prefix}: HTTP {response.status_code} - {response.text}')
+    return response.json()['Hash']
 
 
 def store_json_object(json_dict: dict, rpc_api_url: str):
