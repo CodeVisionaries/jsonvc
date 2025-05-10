@@ -45,9 +45,9 @@ def _store_json_object(json_dict: dict, rpc_api_url: str, only_hash: bool=False)
     file_obj = BytesIO(json_bytes)
     files = {'file': ('dummy', file_obj)}
     if not only_hash:
-        upload_url = rpc_api_url.rstrip('/') + '/ipfs/upload'
+        upload_url = rpc_api_url.rstrip('/') + '/upload'
     else:
-        upload_url = rpc_api_url.rstrip('/') + '/ipfs/get-content-identifier'
+        upload_url = rpc_api_url.rstrip('/') + '/get-content-identifier'
     response = requests.post(upload_url, files=files)
     if response.status_code != 200:
         raise Exception(f'Upload failed: HTTP {response.status_code} - {response.text}')
