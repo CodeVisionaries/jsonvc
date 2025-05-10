@@ -31,8 +31,11 @@ def construct_filepath(json_hash: str, storage_dir: Path) -> str:
 
 
 def load_json_file(filepath: Path) -> dict:
-    with open(Path(filepath), 'r') as f:
-        json_dict = json.load(f)
+    try:
+        with open(Path(filepath), 'r') as f:
+            json_dict = json.load(f)
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError('Invalid JSON file', e.doc, e.pos)
     return json_dict
 
 
