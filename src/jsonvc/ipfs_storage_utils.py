@@ -51,7 +51,7 @@ def _store_json_object(json_dict: dict, rpc_api_url: str, only_hash: bool=False)
         if only_hash:
             message_prefix = 'CID determination failed'
         else:
-            message_prefix = 'Upload filed'
+            message_prefix = 'Upload failed'
         raise Exception(f'{message_prefix}: HTTP {response.status_code} - {response.text}')
     return response.json()['Hash']
 
@@ -62,3 +62,9 @@ def store_json_object(json_dict: dict, rpc_api_url: str):
 
 def compute_hash(json_dict: dict, rpc_api_url: str):
     return _store_json_object(json_dict, rpc_api_url, only_hash=True)
+
+
+def provide_cid(cid: str, rpc_api_url):
+    ipfs_provide_url = rpc_api_url.rstrip('/') + '/v0/routing/provide'
+    resp = requests.post(ipfs_provide_url, params={'arg': cid})
+    return resp.status_code == 200

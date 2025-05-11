@@ -18,6 +18,13 @@ class IpfsJsonStorageProvider(JsonStorageProvider):
             rpc_api_url if rpc_api_url_upload is None else rpc_api_url_upload
         )
         self._cache_dir = Path(cache_dir)
+        self._provide = False
+
+    def enable_provide(self):
+        self._provide = True
+
+    def disable_provide(self):
+        self._provide = False
 
     def load(self, json_hash: str) -> dict:
         if ipfs_jsu.exists_local_json_file(self._cache_dir, json_hash):
@@ -29,6 +36,9 @@ class IpfsJsonStorageProvider(JsonStorageProvider):
     def store(self, json_dict: dict) -> str:
         json_hash = ipfs_jsu.store_json_object(json_dict, self._rpc_api_url_upload)
         ipfs_jsu.store_local_json_file(self._cache_dir, json_hash, json_dict)
+        if self._provide:
+            if not ipfs_jsu.provide_cid(json_hash, self._rpc_api_url_upload):
+                raise Exception(f'failed to provide CID to IPFS network---public access may be limited')
         return json_hash
 
     def exists(self, json_hash: str) -> bool:

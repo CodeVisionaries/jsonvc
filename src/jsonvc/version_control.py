@@ -202,6 +202,9 @@ class JsonDocVersionControl:
     def get_cache(self):
         return self._cache
 
+    def get_storage_provider(self):
+        return self._storage
+
     # methods taking json dicts as input
 
     def get_associated_node_hashes(self, json_dict: dict) -> list[str]:
@@ -298,6 +301,9 @@ class JsonFileVersionControl:
 
     def get_cache(self):
         return self._docvc.get_cache()
+
+    def get_storage_provider(self):
+        return self._docvc.get_storage_provider()
 
     def _get_hash_from_objref(self, json_objref: str, source: str='any') -> None:
         if source in ('any', 'file'):

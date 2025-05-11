@@ -237,6 +237,7 @@ def _prepare_parser():
 
     track_parser = subparsers.add_parser('track', help='Track a json file')
     track_parser.add_argument('filename', type=str, help='The json file to track')
+    track_parser.add_argument('--provide', action='store_true', help='Provide file to peers (IPFS only)')
     _add_message_arg(track_parser)
 
     istracked_parser = subparsers.add_parser('istracked', help='Show if a json file is tracked')
@@ -246,6 +247,7 @@ def _prepare_parser():
     update_parser.add_argument('old_objref', type=str, help='The current tracked JSON document')
     update_parser.add_argument('new_objref', type=str, help='The new JSON document to replace it with')
     update_parser.add_argument('--force', action='store_true', help='Force creation of node')
+    update_parser.add_argument('--provide', action='store_true', help='Provide file to peers (IPFS only)')
     _add_message_arg(update_parser)
 
     replace_parser = subparsers.add_parser('replace', help='Update target file and remove source file')
@@ -253,6 +255,7 @@ def _prepare_parser():
     replace_parser.add_argument('update_file', type=Path, help='The file with the updatd JSON (will be deleted)')
     replace_parser.add_argument('--force', action='store_true', help='Force replacement even if JSON document in update_file already tracked')
     replace_parser.add_argument('--targethash', type=str, nargs='?',  help='Target node hash to eliminate ambiguity')
+    replace_parser.add_argument('--provide', action='store_true', help='Provide file to peers (IPFS only)')
     _add_message_arg(replace_parser)
 
     showassoc_parser = subparsers.add_parser('showassoc', help='Show nodes associated with JSON document')
@@ -351,6 +354,12 @@ def _perform_config_action(args):
 
 
 def _perform_regular_action(args, filevc):
+    activate_provie = lambda: None
+    if hasattr(args, 'provide') and args.provide:
+        storeprov = filevc.get_storage_provider()
+        if isinstance(storeprov, IpfsJsonStorageProvider):
+            storeprov.enable_provide()
+
     if args.command == 'track':
         action_track(args.filename, args.message, filevc)
     elif args.command == 'istracked':
