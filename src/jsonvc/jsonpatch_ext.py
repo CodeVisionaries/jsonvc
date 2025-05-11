@@ -1,12 +1,12 @@
 import jsonpatch
-import json
+import orjson
 from copy import deepcopy
 from typing import Callable
 from .json.base_models import ExtJsonPatchBase
 
 
 def create_patch(old_json_dict: dict, new_json_dict: dict) -> list:
-    return json.loads(
+    return orjson.loads(
         jsonpatch.make_patch(old_json_dict, new_json_dict).to_string()
     )
 

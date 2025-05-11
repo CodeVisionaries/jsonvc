@@ -1,6 +1,8 @@
 from typing import Callable, Optional
-import json
+import orjson
 import hashlib
+
+import time
 
 
 def is_hexadecimal(numstr: str) -> bool:
@@ -22,11 +24,7 @@ def is_hash_prefix_wellformed(numstr: str) -> bool:
 
 def get_unique_json_repr(json_dict: dict) -> str:
     """Return a compact and unique JSON string representation"""
-    return json.dumps(
-        json_dict, skipkeys=False, ensure_ascii=True,
-        check_circular=True, allow_nan=False, indent=None,
-        separators=(',',':'), sort_keys=True
-    )
+    return orjson.dumps(json_dict, option=orjson.OPT_SORT_KEYS).decode('utf-8')
 
 
 def compute_hash(data: str, algo='sha256') -> str:
@@ -42,4 +40,4 @@ def compute_json_hash(json_dict: dict, algo='sha256') -> str:
 
 
 def normalize_json_dict(json_dict: dict) -> dict:
-    return json.loads(get_unique_json_repr(json_dict))
+    return orjson.loads(get_unique_json_repr(json_dict))

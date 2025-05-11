@@ -1,5 +1,5 @@
 from pathlib import Path
-import json
+import orjson
 import requests
 import tempfile
 from .checksum import get_unique_json_repr
@@ -14,7 +14,7 @@ def exists_local_json_file(filedir: Path, filename: str) -> bool:
 def load_local_json_file(filedir: Path, filename: str) -> dict:
     filepath = Path(filedir) / filename
     with open(filepath, 'r') as f:
-        json_dict = json.load(f)
+        json_dict = orjson.loads(f.read())
     return json_dict
 
 

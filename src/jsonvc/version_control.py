@@ -1,5 +1,5 @@
 from typing import Callable, List, Dict, Optional
-import json
+import orjson
 from .jsonpatch_ext import (
     create_patch,
     apply_patch,
@@ -312,7 +312,7 @@ class JsonFileVersionControl:
                         node_hashes
                     )
                 return list(node_hashes)[0]
-            except json.decoder.JSONDecodeError:
+            except orjson.JSONDecodeError:
                 raise ValueError(
                     f'The file `{json_objref}` is not in JSON format.'
                 )
@@ -386,11 +386,17 @@ class JsonFileVersionControl:
 
     def get_doc(self, json_objref: str, json_dumps_args: Optional[dict]=None) -> str:
         json_dict = self._get_doc_from_objref(json_objref, source='cache')
-        return json.dumps(json_dict, **json_dumps_args)
+        option = 0
+        if json_dumps_args.get('indent', False):
+            option |= orjson.OPT_INDENT_2
+        return orjson.dumps(json_dict, option=option).decode('utf-8')
 
     def get_diff(self, old_json_objref: str, new_json_objref: str,
                  json_dumps_args: Optional[dict]=None) -> str:
         old_json_dict = self._get_doc_from_objref(old_json_objref)
         new_json_dict = self._get_doc_from_objref(new_json_objref)
         diff_dict = self._docvc.get_diff(old_json_dict, new_json_dict)
-        return json.dumps(diff_dict, **json_dumps_args)
+        option = 0
+        if json_dumps_args.get('indent', False):
+            option |= orjson.OPT_INDENT_2
+        return orjson.dumps(diff_dict, option=option).decode('utf-8')

@@ -1,5 +1,5 @@
 from typing import Union
-import json
+import orjson
 from pathlib import Path
 from .checksum import (
     is_hexadecimal,
@@ -33,9 +33,9 @@ def construct_filepath(json_hash: str, storage_dir: Path) -> str:
 def load_json_file(filepath: Path) -> dict:
     try:
         with open(Path(filepath), 'r') as f:
-            json_dict = json.load(f)
-    except json.JSONDecodeError as e:
-        raise json.JSONDecodeError('Invalid JSON file', e.doc, e.pos)
+            json_dict = orjson.loads(f.read())
+    except orjson.JSONDecodeError as e:
+        raise orjson.JSONDecodeError('Invalid JSON file', e.doc, e.pos)
     return json_dict
 
 
@@ -62,6 +62,6 @@ def store_json_object(json_dict: dict, storage_dir: Path) -> None:
         load_json_object(json_hash, storage_dir)
         return json_hash
     filepath = construct_filepath(json_hash, storage_dir) 
-    with open(filepath, 'w') as f:
-        json.dump(json_dict, f, indent=2)
+    with open(filepath, 'wb') as f:
+        f.write(orjson.dumps(json_dict, option=orjson.OPT_SORT_KEYS))
     return json_hash

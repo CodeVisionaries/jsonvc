@@ -1,6 +1,6 @@
 import os
 import sys
-import json
+import orjson
 from pathlib import Path
 import argparse
 from .checksum import get_unique_json_repr
@@ -35,13 +35,13 @@ def read_config_file():
     if not os.path.isfile(config_path):
         return {}
     with open(config_path, 'r') as f:
-        return json.load(f)
+        return orjson.loads(f.read())
 
 
 def write_config_file(config_dict):
     config_path = get_config_filepath()
-    with open(config_path, 'w') as f:
-        json.dump(config_dict, f)
+    with open(config_path, 'wb') as f:
+        f.write(orjson.dumps(config_dict, option=orjson.OPT_INDENT_2))
 
 
 def update_config_file(config_update):
@@ -64,7 +64,7 @@ def read_cache_file():
         }
     else:
         with open(cache_path, 'r') as f:
-            return json.load(f)
+            return orjson.loads(f.read())
 
 
 def write_cache_file(cache_dict):
@@ -197,7 +197,7 @@ def action_config_showdir():
 
 def action_config_show():
     config = read_config_file()
-    print(json.dumps(config, indent=2))
+    print(orjson.dumps(config, option=orjson.OPT_INDENT_2).decode('utf-8'))
     sys.exit(0)
 
 
@@ -221,7 +221,7 @@ def action_config_set(key, value):
 
 
 def _add_json_dumps_args(parser):
-    parser.add_argument('--indent', type=int, nargs='?', help='Indent for JSON output formatting')
+    parser.add_argument('--indent', action='store_true', help='Enable indent for JSON output formatting')
 
 
 def _add_message_arg(parser):
