@@ -207,6 +207,7 @@ def action_config_set(key, value):
         'local-storage-path',
         'ipfs-gateway-url',
         'ipfs-rpc-url',
+        'ipfs-rpc-url-upload',
         'ipfs-cache-dir',
     )
     if key not in allowed_keys:
@@ -322,7 +323,11 @@ def _setup_ipfs_storage_provider(config):
             print(f'Please set variable `{v}` in configuration')
     if var_missing:
         sys.exit(1)
-    return IpfsJsonStorageProvider(*(config[v] for v in req_vars))
+    ipfs_rpc_url_upload = config.get('ipfs-rpc-url-upload', None)
+    return IpfsJsonStorageProvider(
+        *(config[v] for v in req_vars),
+        rpc_api_url_upload=ipfs_rpc_url_upload
+    )
 
 
 def _setup_storage_provider():

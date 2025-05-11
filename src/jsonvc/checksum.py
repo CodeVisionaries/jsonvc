@@ -2,8 +2,6 @@ from typing import Callable, Optional
 import orjson
 import hashlib
 
-import time
-
 
 def is_hexadecimal(numstr: str) -> bool:
     """Check if string qualifies as hexadecimal number"""
