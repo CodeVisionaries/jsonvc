@@ -100,7 +100,7 @@ def action_istracked(filename, filevc):
 
 def action_update(old_objref, new_objref, message, force, filevc):
     try:
-        filevc.update(old_objref, new_objref, message, force)
+        json_hash = filevc.update(old_objref, new_objref, message, force)
         write_cache_file(filevc.get_cache().to_dict())
     except DocAlreadyTrackedError:
         print(
@@ -116,6 +116,7 @@ def action_update(old_objref, new_objref, message, force, filevc):
         sys.exit(1)
 
     print(f'Successfully registered update to json object {old_objref}')
+    print(f'Associated tracking node is {json_hash}')
     sys.exit(0)
 
 
