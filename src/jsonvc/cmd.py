@@ -253,7 +253,7 @@ def _prepare_parser():
 
     replace_parser = subparsers.add_parser('replace', help='Update target file and remove source file')
     replace_parser.add_argument('target_file', type=Path, help='The file to be updated')
-    replace_parser.add_argument('update_file', type=Path, help='The file with the updatd JSON (will be deleted)')
+    replace_parser.add_argument('update_file', type=Path, help='The file with the updated JSON (will be deleted)')
     replace_parser.add_argument('--force', action='store_true', help='Force replacement even if JSON document in update_file already tracked')
     replace_parser.add_argument('--targethash', type=str, nargs='?',  help='Target node hash to eliminate ambiguity')
     replace_parser.add_argument('--provide', action='store_true', help='Provide file to peers (IPFS only)')
